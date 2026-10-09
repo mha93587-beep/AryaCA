@@ -59,6 +59,8 @@ jobs:
             libharfbuzz0b \
             libfontconfig1 \
             poppler-utils \
+            fonts-deva \
+            fonts-noto-extra \
             fonts-noto-core \
             fonts-noto-cjk
 
