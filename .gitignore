@@ -1,0 +1,31 @@
+# Secrets & Environment variables
+.env
+.env.local
+.env.production
+.env.development
+*.env
+secrets.json
+!.env.example
+
+# Generated Outputs & Assets
+outputs/
+attached_assets/
+*.pdf
+*.png
+*.jpg
+*.jpeg
+
+# Python Cache & Testing
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.venv/
+venv/
+ENV/
+
+# System / Editor
+.DS_Store
+.idea/
+.vscode/
+*.log
