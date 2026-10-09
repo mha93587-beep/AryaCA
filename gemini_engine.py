@@ -113,33 +113,39 @@ class GeminiRotationEngine:
         self.api_keys = keys_pool
         self.client = RotatingGeminiClient(self.api_keys)
 
+        # General text generation models priority (flash-lite first for high quotas)
         self.model_priority = [
-            "gemini-2.5-flash",
-            "gemini-2.5-flash-lite",
-            "gemini-2.0-flash",
             "gemini-3.5-flash-lite",
             "gemini-3.1-flash-lite",
+            "gemini-2.5-flash-lite",
+            "gemini-3.6-flash",
+            "gemini-3.7-flash",
+            "gemini-3.8-flash",
+            "gemini-3.5-flash",
+            "gemini-flash-latest",
+            "gemini-2.5-flash"
+        ]
+
+        # Search Grounding models priority (gemini-2.5-flash-lite has 1,500 daily quota on Free Tier)
+        self.grounding_model_priority = [
+            "gemini-2.5-flash-lite",
+            "gemini-flash-latest",
+            "gemini-2.5-flash",
+            "gemini-3.5-flash-lite",
+            "gemini-3.1-flash-lite"
+        ]
+
+        # Vision verification models priority (flash-lite first for high rate limits & zero 404s)
+        self.vision_model_priority = [
+            "gemini-3.5-flash-lite",
+            "gemini-3.1-flash-lite",
+            "gemini-2.5-flash-lite",
             "gemini-3.6-flash",
             "gemini-3.5-flash",
             "gemini-flash-latest",
-            "gemini-2.0-flash-lite",
-            "gemini-pro-latest"
-        ]
-
-        self.grounding_model_priority = [
-            "gemini-2.5-flash",
-            "gemini-2.5-flash-lite",
-            "gemini-2.0-flash",
-            "gemini-2.0-flash-lite",
-            "gemini-flash-latest",
-            "gemini-pro-latest"
-        ]
-
-        self.vision_model_priority = [
-            "gemini-2.5-flash",
-            "gemini-2.0-flash",
-            "gemini-flash-latest",
-            "gemini-2.5-pro"
+            "gemini-3.7-flash",
+            "gemini-3.8-flash",
+            "gemini-2.5-flash"
         ]
 
         self.active_working_model = None

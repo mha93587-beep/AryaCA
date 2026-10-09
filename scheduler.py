@@ -44,7 +44,7 @@ def run_pipeline(date_str: str, count: int = 20, skip_telegram: bool = False, dr
     # Step 3: Fetch & Verify Topic Images
     logger.info(f"3️⃣ Concurrently fetching & Gemini Vision-verifying topic photos for {len(questions)} questions...")
     img_mgr = ImageManager(engine=engine)
-    img_mgr.fetch_images_for_questions(questions=questions, max_workers=5)
+    img_mgr.fetch_images_for_questions(questions=questions, max_workers=3)
 
     # Step 4: Render Multi-Page Dual-Column A4 PDF & Page 1 Preview
     logger.info("4️⃣ Compiling Multi-Page Dual-Column A4 Magazine PDF with WeasyPrint & Noto Serif...")

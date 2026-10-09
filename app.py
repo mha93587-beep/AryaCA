@@ -74,7 +74,7 @@ with col1:
 
         with st.spinner(f"2️⃣ Concurrently fetching and Vision-verifying HD topic images ({len(questions)} items)..."):
             img_mgr = ImageManager(engine=engine)
-            img_mgr.fetch_images_for_questions(questions=questions, max_workers=5)
+            img_mgr.fetch_images_for_questions(questions=questions, max_workers=3)
 
         with st.spinner("3️⃣ Compiling Multi-Page Dual-Column A4 Magazine PDF with WeasyPrint..."):
             pdf_gen = PDFGenerator()

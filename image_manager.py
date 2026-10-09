@@ -159,7 +159,7 @@ class ImageManager:
         b64_str = base64.b64encode(buf.getvalue()).decode("utf-8")
         return f"data:image/jpeg;base64,{b64_str}"
 
-    def fetch_images_for_questions(self, questions: List[dict], max_workers: int = 5) -> None:
+    def fetch_images_for_questions(self, questions: List[dict], max_workers: int = 3) -> None:
         """
         Concurrently fetches and verifies real HD photos for all questions.
         Updates each question dict with 'image_data_uri' in place.
