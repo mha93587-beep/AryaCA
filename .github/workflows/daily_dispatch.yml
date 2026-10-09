@@ -1,0 +1,82 @@
+name: AryaCA Daily Current Affairs Automated Dispatch (6:00 AM IST)
+
+on:
+  schedule:
+    # 00:30 UTC = 06:00 AM IST daily (IST is UTC + 5:30)
+    - cron: '30 0 * * *'
+  workflow_dispatch:
+    inputs:
+      question_count:
+        description: 'Number of MCQs to curate (default: 20)'
+        required: false
+        default: '20'
+      date:
+        description: 'Date override (YYYY-MM-DD, optional)'
+        required: false
+        default: ''
+
+concurrency:
+  group: aryaca-daily-pipeline
+  cancel-in-progress: false
+
+jobs:
+  daily_dispatch:
+    name: Generate & Broadcast Daily Edition
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      TZ: 'Asia/Kolkata'
+      GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
+      TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+      TG_CHANNEL_CHAT_IDS: ${{ secrets.TG_CHANNEL_CHAT_IDS }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      BRAND_NAME: 'AryaCA'
+      CHANNEL_HANDLE: '@AryaCAtg'
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 📦 Install Linux System Dependencies (WeasyPrint & Poppler)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libpango-1.0-0 \
+            libpangoft2-1.0-0 \
+            libharfbuzz0b \
+            libfontconfig1 \
+            poppler-utils \
+            fonts-noto-core \
+            fonts-noto-cjk
+
+      - name: 🐍 Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 🚀 Run Autonomous Daily Pipeline
+        run: |
+          COUNT="${{ github.event.inputs.question_count || '20' }}"
+          DATE_ARG=""
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            DATE_ARG="--date ${{ github.event.inputs.date }}"
+          fi
+          echo "Running AryaCA automated scheduler at $(date)..."
+          python3 scheduler.py --count "$COUNT" $DATE_ARG
+
+      - name: 💾 Archive Generated PDF & Preview Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: AryaCA-Daily-Output-${{ github.run_id }}
+          path: |
+            outputs/*.pdf
+            outputs/*.png
+          retention-days: 7
