@@ -236,22 +236,26 @@ class GeminiRotationEngine:
         )
 
         for model in self.vision_model_priority:
-            try:
-                raw_client = self.client.current_client
-                part = types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg")
-                res = raw_client.models.generate_content(
-                    model=model,
-                    contents=[part, prompt],
-                    config=types.GenerateContentConfig(
-                        response_mime_type="application/json",
-                        temperature=0.1
+            for attempt in range(min(3, len(self.api_keys))):
+                try:
+                    raw_client = self.client.current_client
+                    part = types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg")
+                    res = raw_client.models.generate_content(
+                        model=model,
+                        contents=[part, prompt],
+                        config=types.GenerateContentConfig(
+                            response_mime_type="application/json",
+                            temperature=0.1
+                        )
                     )
-                )
-                if res and res.text:
-                    data = json.loads(res.text)
-                    return bool(data.get("is_relevant", True)), str(data.get("reason", ""))
-            except Exception as e:
-                logger.warning(f"Vision verification with {model} failed: {e}")
-                continue
+                    if res and res.text:
+                        data = json.loads(res.text)
+                        return bool(data.get("is_relevant", False)), str(data.get("reason", ""))
+                except Exception as e:
+                    logger.warning(f"Vision verification with {model} failed on attempt {attempt+1}: {e}")
+                    if any(x in str(e).lower() for x in ("429", "quota", "exhausted", "limit", "resource_exhausted")):
+                        self.rotate_key()
+                        continue
+                    break
 
-        return True, "Defaulted to true due to vision check error."
+        return False, "Vision verification failed across all available models and keys."
