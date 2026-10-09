@@ -3,7 +3,7 @@ import glob
 import logging
 import subprocess
 from datetime import datetime
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 from jinja2 import Environment, FileSystemLoader
 import weasyprint
 
