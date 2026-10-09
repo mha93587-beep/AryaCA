@@ -16,12 +16,14 @@ HINDI_MONTHS = {
     9: "सितंबर", 10: "अक्टूबर", 11: "नवंबर", 12: "दिसंबर"
 }
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 class PDFGenerator:
     def __init__(self, 
-                 template_dir: str = "/storage/emulated/0/antigravity/AryaCA/static/templates",
-                 output_dir: str = "/storage/emulated/0/antigravity/AryaCA/outputs"):
-        self.template_dir = template_dir
-        self.output_dir = output_dir
+                 template_dir: Optional[str] = None,
+                 output_dir: Optional[str] = None):
+        self.template_dir = template_dir or os.path.join(BASE_DIR, "static", "templates")
+        self.output_dir = output_dir or os.path.join(BASE_DIR, "outputs")
         os.makedirs(self.output_dir, exist_ok=True)
         self.jinja_env = Environment(loader=FileSystemLoader(self.template_dir))
 

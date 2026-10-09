@@ -2,7 +2,7 @@ import os
 import sys
 import pytest
 
-sys.path.insert(0, "/storage/emulated/0/antigravity/AryaCA")
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def test_image_fetching_and_verification():
     from image_manager import ImageManager

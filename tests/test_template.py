@@ -2,7 +2,8 @@ import os
 from jinja2 import Environment, FileSystemLoader
 
 def test_daily_magazine_template_renders():
-    template_dir = "/storage/emulated/0/antigravity/AryaCA/static/templates"
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    template_dir = os.path.join(base_dir, "static", "templates")
     env = Environment(loader=FileSystemLoader(template_dir))
     template = env.get_template("daily_magazine.html")
     

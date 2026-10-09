@@ -4,9 +4,22 @@ from datetime import datetime
 import streamlit as st
 from dotenv import load_dotenv
 
-# Ensure local modules are importable
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, BASE_DIR)
+dotenv_path = os.path.join(BASE_DIR, ".env")
+if os.path.exists(dotenv_path):
+    load_dotenv(dotenv_path)
+else:
+    load_dotenv()
+
+# Automatically bridge Streamlit Cloud Secrets into os.environ for submodules
+try:
+    if hasattr(st, "secrets"):
+        for k, v in st.secrets.items():
+            if isinstance(v, str):
+                os.environ[k] = v
+except Exception:
+    pass
 
 from gemini_engine import GeminiRotationEngine
 from news_curator import NewsCurator

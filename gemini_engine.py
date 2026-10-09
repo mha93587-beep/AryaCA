@@ -7,7 +7,12 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
-load_dotenv("/storage/emulated/0/antigravity/AryaCA/.env")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+dotenv_path = os.path.join(BASE_DIR, ".env")
+if os.path.exists(dotenv_path):
+    load_dotenv(dotenv_path)
+else:
+    load_dotenv()
 
 logger = logging.getLogger("gemini_engine")
 logging.basicConfig(level=logging.INFO)
