@@ -41,7 +41,7 @@ st.sidebar.header("⚙️ Configuration")
 selected_date = st.sidebar.date_input("Edition Date", datetime.now())
 date_str = selected_date.strftime("%Y-%m-%d")
 
-q_count = st.sidebar.slider("Number of MCQs (Pages)", min_value=10, max_value=30, value=20, step=5)
+q_count = st.sidebar.slider("Number of MCQs (Pages)", min_value=10, max_value=30, value=30, step=5)
 
 st.sidebar.subheader("🎯 Focus Categories")
 cat_national = st.sidebar.checkbox("National & PIB Releases", value=True)
@@ -103,7 +103,7 @@ with col2:
                     pdf_path=st.session_state.pdf_path,
                     preview_png_path=st.session_state.png_path,
                     date_str=date_str,
-                    question_count=len(st.session_state.questions) if st.session_state.questions else 20
+                    question_count=len(st.session_state.questions) if st.session_state.questions else 30
                 )
                 for ch, success in report.items():
                     if success:

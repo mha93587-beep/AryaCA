@@ -30,7 +30,7 @@ class NewsCurator:
     def __init__(self, engine: Optional[GeminiRotationEngine] = None):
         self.engine = engine or GeminiRotationEngine()
 
-    def curate_daily_questions(self, date_str: str, count: int = 20, categories: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+    def curate_daily_questions(self, date_str: str, count: int = 30, categories: Optional[List[str]] = None) -> List[Dict[str, Any]]:
         logger.info(f"📰 Curating {count} comprehensive questions for date: {date_str}...")
 
         if count <= 10:

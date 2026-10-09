@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       question_count:
-        description: 'Number of MCQs to curate (default: 20)'
+        description: 'Number of MCQs to curate (default: 30)'
         required: false
-        default: '20'
+        default: '30'
       date:
         description: 'Date override (YYYY-MM-DD, optional)'
         required: false
@@ -68,7 +68,7 @@ jobs:
 
       - name: 🚀 Run Autonomous Daily Pipeline
         run: |
-          COUNT="${{ inputs.question_count || '20' }}"
+          COUNT="${{ inputs.question_count || '30' }}"
           EXTRA_ARGS=""
           if [ -n "${{ inputs.date }}" ]; then
             EXTRA_ARGS="$EXTRA_ARGS --date ${{ inputs.date }}"
