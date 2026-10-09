@@ -38,6 +38,7 @@ jobs:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       BRAND_NAME: 'AryaCA'
       CHANNEL_HANDLE: '@AryaCAtg'
+      CHANNEL_URL: 'https://t.me/AryaCAtg'
 
     steps:
       - name: 📥 Checkout Repository

@@ -39,10 +39,12 @@ class PDFGenerator:
                          date_str: str, 
                          questions: List[Dict[str, Any]], 
                          brand_name: str = "AryaCA", 
-                         channel_handle: str = "@AryaCAtg") -> Tuple[str, str]:
+                         channel_handle: str = "@AryaCAtg",
+                         channel_url: Optional[str] = None) -> Tuple[str, str]:
         logger.info(f"📄 Rendering AryaCA edition for {date_str} with {len(questions)} questions...")
         template = self.jinja_env.get_template("daily_magazine.html")
         date_hi = self.format_date_hindi(date_str)
+        effective_channel_url = channel_url or os.getenv("CHANNEL_URL", f"https://t.me/{channel_handle.lstrip('@')}")
 
         # Multi-page pagination: 10 questions per page
         PAGE_SIZE = 10
@@ -60,6 +62,7 @@ class PDFGenerator:
         rendered_html = template.render(
             brand_name=brand_name,
             channel_handle=channel_handle,
+            channel_url=effective_channel_url,
             edition_date_hi=date_hi,
             pages=pages,
             total_pages=total_pages,
