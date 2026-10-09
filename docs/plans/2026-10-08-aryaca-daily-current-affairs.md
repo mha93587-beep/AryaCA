@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build a complete automated Daily Current Affairs generation and multi-channel publishing system for Indian competitive exams (RRB, SSC, BPSC) producing Kumar Gaurav Sir / Phool-Patti style bilingual MCQs with Lallantop Static GK, Gemini Vision-verified topic photos, Noto Serif Devanagari dual-column PDFs, Streamlit Cloud UI, and Telegram broadcasting.
+**Goal:** Build a complete automated Daily Current Affairs generation and multi-channel publishing system for Indian competitive exams (RRB, SSC, BPSC) producing AryaCA premium bilingual MCQs with Lallantop Static GK, Gemini Vision-verified topic photos, Noto Serif Devanagari dual-column PDFs, Streamlit Cloud UI, and Telegram broadcasting.
 
 **Architecture:** A modular Python pipeline combining Gemini API key & model rotation with Google Search Grounding for zero-WAF real-time current affairs curation, automated topic image retrieval with Gemini Vision relevance verification, WeasyPrint dual-column A4 HTML-to-PDF rendering emulating `IMG_20261008_140206_748.jpg`, and multi-channel Telegram broadcasting with a Streamlit Cloud web dashboard.
 

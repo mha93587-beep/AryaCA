@@ -129,7 +129,7 @@ class NewsCurator:
             grounded_context = f"Events and milestones around {date_str} for {theme_title}."
 
         curation_prompt = (
-            f"You are the Lead Current Affairs Subject Matter Expert inspired by Kumar Gaurav Sir's 'Phool-Patti Wali Class' (Utkarsh Classes).\n"
+            f"You are the Lead Current Affairs Subject Matter Expert for AryaCA.\n"
             f"Target Competitive Exams: RRB NTPC, RRB Group D, SSC CGL/CHSL, Bihar BPSC, Bihar BSSC, and State PSCs.\n"
             f"Edition Date: {date_str}\n"
             f"Category Theme: {theme_title}\n\n"

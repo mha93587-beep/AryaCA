@@ -1,6 +1,6 @@
 # 📰 AryaCA — Automated Daily Current Affairs & Exam MCQ Engine
 
-AryaCA is a high-speed, automated publishing engine designed for Indian competitive exams (RRB NTPC / Group D, SSC CGL / CHSL, Bihar BPSC / BSSC, and State PSCs). Inspired by Kumar Gaurav Sir's renowned "Phool-Patti Wali Class", AryaCA transforms real-time news into curated bilingual MCQs, Lallantop static GK facts, Gemini Vision-verified topic photographs, dual-column A4 magazine PDFs, and automated multi-channel Telegram broadcasts.
+AryaCA is a high-speed, automated publishing engine designed for Indian competitive exams (RRB NTPC / Group D, SSC CGL / CHSL, Bihar BPSC / BSSC, and State PSCs). AryaCA transforms real-time news into curated bilingual MCQs, Lallantop static GK facts, Gemini Vision-verified topic photographs, dual-column A4 magazine PDFs, and automated multi-channel Telegram broadcasts.
 
 ---
 

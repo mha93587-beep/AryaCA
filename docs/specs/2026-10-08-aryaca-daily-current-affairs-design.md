@@ -14,7 +14,7 @@ The objective of **AryaCA** is to create a fully automated, high-yield Daily Cur
 - **Central Level:** RRB NTPC, RRB Group D, RRB ALP, SSC CGL, SSC CHSL, SSC MTS.
 - **State Level:** Bihar BPSC, Bihar BSSC CGL / Inter Level, Bihar Police/Daroga, and other state public service exams.
 
-The system incorporates the high-retention pedagogical method popularized by Kumar Gaurav Sir (Utkarsh Classes' "Phool-Patti Wali Class"):
+The system incorporates high-retention exam pedagogical methods:
 1. **Curated Daily Exam-Relevant Topics:** National, International, Tech/AI & Chips, and State-specific developments.
 2. **Bilingual MCQs (Hindi + English):** 5-option format (incorporating Option 5: *अनुत्तरित प्रश्न / Prefer not to answer* as standardized in modern state exams).
 3. **"Lallantop" Exam Fact Boosters:** Connecting static GK, constitutional articles, history, and previous years' exam pointers to each current event.
