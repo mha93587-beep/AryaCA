@@ -119,8 +119,83 @@ class NewsCurator:
         for idx, q in enumerate(all_questions):
             q["num"] = idx + 1
 
+        # Balance and randomize answer keys evenly (25% each for 1, 2, 3, 4)
+        all_questions = self._balance_and_shuffle_options(all_questions[:count])
+
         logger.info(f"✅ Total curated questions ready: {len(all_questions)}")
-        return all_questions[:count]
+        return all_questions
+
+    def _balance_and_shuffle_options(self, questions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Dynamically shuffles options and balances correct answer keys evenly across
+        '1', '2', '3', and '4' (~25% probability each).
+        Eliminates LLM bias toward Option 1 or 2 while ensuring strict accuracy.
+        Option 5 remains strictly fixed as 'अनुत्तरित प्रश्न / Prefer not to answer'.
+        """
+        import random
+
+        count = len(questions)
+        if count == 0:
+            return questions
+
+        base = ["1", "2", "3", "4"] * (count // 4 + 2)
+        target_keys = base[:count]
+
+        # Shuffle target keys so no 3 identical keys appear consecutively
+        for _ in range(50):
+            random.shuffle(target_keys)
+            valid = True
+            for i in range(len(target_keys) - 2):
+                if target_keys[i] == target_keys[i + 1] == target_keys[i + 2]:
+                    valid = False
+                    break
+            if valid:
+                break
+
+        for idx, q in enumerate(questions):
+            target_key = target_keys[idx]
+            current_ans_key = str(q.get("correct_ans", "1")).strip()
+            opts = q.get("options", [])
+
+            choices_4 = [o for o in opts[:4]]
+            correct_val = None
+            distractors = []
+
+            for o in choices_4:
+                if isinstance(o, dict):
+                    if str(o.get("key", "")).strip() == current_ans_key:
+                        correct_val = o.get("val")
+                    else:
+                        distractors.append(o.get("val"))
+
+            if not correct_val and choices_4:
+                correct_val = choices_4[0].get("val") if isinstance(choices_4[0], dict) else str(choices_4[0])
+                distractors = [o.get("val") if isinstance(o, dict) else str(o) for o in choices_4[1:]]
+
+            # Shuffle distractors randomly
+            random.shuffle(distractors)
+
+            # Build new 4 options with correct_val placed exactly at target_key position
+            target_slot = int(target_key) - 1
+            new_choices = []
+            d_idx = 0
+            for slot in range(4):
+                if slot == target_slot:
+                    new_choices.append({"key": str(slot + 1), "val": correct_val})
+                else:
+                    d_val = distractors[d_idx] if d_idx < len(distractors) else "विकल्प उपलब्ध नहीं / Option not available"
+                    new_choices.append({"key": str(slot + 1), "val": d_val})
+                    d_idx += 1
+
+            # Option 5 strictly fixed
+            new_choices.append({"key": "5", "val": "अनुत्तरित प्रश्न / Prefer not to answer"})
+
+            q["options"] = new_choices
+            q["correct_ans"] = target_key
+
+        ans_dist = {k: sum(1 for q in questions if q.get("correct_ans") == k) for k in ["1", "2", "3", "4"]}
+        logger.info(f"⚖️ Answer key distribution balanced across {count} questions: {ans_dist}")
+        return questions
 
     def _curate_single_batch(self, date_str: str, batch_count: int, start_num: int, theme_title: str, grounding_query: str, curation_theme: str) -> List[Dict[str, Any]]:
         logger.info(f"🔍 Grounding research for '{theme_title}'...")
