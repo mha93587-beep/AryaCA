@@ -16,7 +16,7 @@ class ImageManager:
         self.engine = engine or GeminiRotationEngine()
         self.session = requests.Session()
         self.session.headers.update({
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+            "User-Agent": "AryaCABot/1.0 (https://t.me/AryaCAtg; bot@aryaca.org) Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
         })
 
     def _dynamically_generate_queries_with_ai(self, question_hi: str, question_en: str, current_query: str) -> List[str]:
@@ -86,7 +86,7 @@ class ImageManager:
             if not candidate_urls:
                 continue
 
-            for url in candidate_urls[:6]:
+            for url in candidate_urls[:3]:
                 try:
                     resp = self.session.get(url, timeout=6)
                     if resp.status_code == 200 and len(resp.content) > 4000:
@@ -131,7 +131,7 @@ class ImageManager:
                     continue
                 logger.info(f"🔍 [Dynamic AI Query] Searching HD photo for: '{ai_q}'...")
                 candidate_urls = self._search_candidate_urls(ai_q)
-                for url in candidate_urls[:6]:
+                for url in candidate_urls[:3]:
                     try:
                         resp = self.session.get(url, timeout=6)
                         if resp.status_code == 200 and len(resp.content) > 4000:
@@ -168,8 +168,14 @@ class ImageManager:
         politicians, ministries, summits, and institutions.
         """
         try:
-            clean = re.sub(r'[^\w\s]', '', query).strip()
-            variants = [clean, " ".join(clean.split()[:2])]
+            # Clean honorifics e.g. "Shri Jagdeep Dhankhar" -> "Jagdeep Dhankhar"
+            clean = re.sub(r'(?i)\b(shri|shree|dr|honble|mr|mrs|ms)\b', '', query)
+            clean = re.sub(r'[^\w\s]', '', clean).strip()
+            variants = [clean]
+            tokens = clean.split()
+            if len(tokens) > 2:
+                variants.append(" ".join(tokens[:2]))
+                variants.append(" ".join(tokens[-2:]))
             for term in variants:
                 if not term or len(term) < 3:
                     continue
@@ -189,7 +195,13 @@ class ImageManager:
         urls = []
         cleaned_query = query.replace('"', '').replace("'", "").strip()
 
-        # Source 1: High-Yield Bing Image Search (Real photographic news & event images)
+        # Source 1: Check Wikipedia Lead Image FIRST for entities (people, institutions, courts)
+        if len(cleaned_query.split()) <= 4 and not any(w in cleaned_query.lower() for w in ("meeting", "drawing", "scene", "wallpaper", "workers")):
+            wiki_thumb = self._search_wikipedia_thumbnail(cleaned_query)
+            if wiki_thumb:
+                urls.append(wiki_thumb)
+
+        # Source 2: High-Yield Bing Image Search (Real photographic news & event images)
         try:
             encoded = requests.utils.quote(cleaned_query)
             bing_url = f"https://www.bing.com/images/search?q={encoded}&first=1&scenario=ImageBasicHover"
@@ -203,7 +215,7 @@ class ImageManager:
         except Exception as e:
             logger.warning(f"Bing image search error: {e}")
 
-        # Source 2: High-Yield Yandex Images Search (Vast global and national news image index)
+        # Source 3: High-Yield Yandex Images Search (Vast global and national news image index)
         try:
             yandex_url = f"https://yandex.com/images/search?text={requests.utils.quote(cleaned_query)}"
             yr = self.session.get(yandex_url, timeout=5)
@@ -217,10 +229,11 @@ class ImageManager:
         except Exception as e:
             logger.debug(f"Yandex image search error: {e}")
 
-        # Source 3: Wikipedia Lead Image for verified official portraits/emblems
-        wiki_thumb = self._search_wikipedia_thumbnail(cleaned_query)
-        if wiki_thumb and wiki_thumb not in urls:
-            urls.append(wiki_thumb)
+        # Source 4: Wikipedia Lead Image fallback if not already appended
+        if not urls:
+            wiki_thumb = self._search_wikipedia_thumbnail(cleaned_query)
+            if wiki_thumb and wiki_thumb not in urls:
+                urls.append(wiki_thumb)
 
         # Source 3: Wikimedia Commons File API (Open access HD photos)
         if len(urls) < 4:
@@ -277,7 +290,11 @@ class ImageManager:
         draw.rectangle([8, 8, 472, 312], outline=(56, 189, 248), width=3)
         draw.rectangle([14, 14, 466, 306], fill=(30, 41, 59))
 
-        font_path = "/storage/emulated/0/antigravity/AryaCA/static/fonts/NotoSerifDevanagari-Bold.ttf"
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        font_path = os.path.join(base_dir, "static", "fonts", "NotoSerifDevanagari-Bold.ttf")
+        if not os.path.exists(font_path):
+            font_path = "/usr/share/fonts/truetype/noto/NotoSerifDevanagari-Bold.ttf"
+
         try:
             from PIL import ImageFont
             font_title = ImageFont.truetype(font_path, 26)
@@ -310,24 +327,8 @@ class ImageManager:
             query = q.get("visual_query") or q.get("question_en", "")[:35]
             context = f"{q.get('question_hi')} / {q.get('question_en')}"
             
-            # 1. Collect all dynamic AI-generated queries for this question
-            alt_queries = []
-            for aq in (q.get("image_search_queries") or q.get("alt_visual_queries") or []):
-                if aq and aq.strip() and aq.strip() not in alt_queries:
-                    alt_queries.append(aq.strip())
-
-            # 2. If no queries were pre-generated, dynamically ask AI to research tailored visual queries right now!
-            if not alt_queries and self.engine:
-                dynamic_ai_queries = self._dynamically_generate_queries_with_ai(
-                    question_hi=q.get("question_hi", ""),
-                    question_en=q.get("question_en", ""),
-                    current_query=query
-                )
-                for dq in dynamic_ai_queries:
-                    if dq not in alt_queries:
-                        alt_queries.append(dq)
-
-            # 3. Also append the correct answer entity if available
+            # 1. Extract and clean the correct answer entity (e.g. "Shri Jagdeep Dhankhar" -> "Jagdeep Dhankhar")
+            correct_entity = None
             correct_ans_key = str(q.get("correct_ans", "")).strip()
             options = q.get("options", [])
             for opt in options:
@@ -336,13 +337,45 @@ class ImageManager:
                     parts = val.split("/")
                     en_part = parts[-1].strip() if len(parts) > 1 else parts[0].strip()
                     if en_part and len(en_part) > 2 and "Prefer not" not in en_part:
-                        if en_part not in alt_queries:
-                            alt_queries.append(en_part)
+                        cleaned = re.sub(r'(?i)\b(shri|shree|dr|honble|mr|mrs|ms)\b', '', en_part).strip()
+                        correct_entity = cleaned or en_part
                     break
+
+            # 2. Build prioritized query list:
+            # If the correct answer is a specific entity (like a leader, company, institution),
+            # place it FIRST because searching the exact entity name gives an instant 100% relevant hit!
+            queries_to_try = []
+            if correct_entity and len(correct_entity.split()) <= 4:
+                queries_to_try.append(correct_entity)
+
+            if query and query.strip() and query.strip() not in queries_to_try:
+                queries_to_try.append(query.strip())
+
+            for aq in (q.get("image_search_queries") or q.get("alt_visual_queries") or []):
+                if aq and aq.strip() and aq.strip() not in queries_to_try:
+                    queries_to_try.append(aq.strip())
+
+            # If correct entity was longer, add it here
+            if correct_entity and correct_entity not in queries_to_try:
+                queries_to_try.append(correct_entity)
+
+            # 3. If no alternative queries exist, ask AI to dynamically research tailored visual queries
+            if len(queries_to_try) <= 1 and self.engine:
+                dynamic_ai_queries = self._dynamically_generate_queries_with_ai(
+                    question_hi=q.get("question_hi", ""),
+                    question_en=q.get("question_en", ""),
+                    current_query=query
+                )
+                for dq in dynamic_ai_queries:
+                    if dq not in queries_to_try:
+                        queries_to_try.append(dq)
+
+            primary_query = queries_to_try[0]
+            alt_queries = queries_to_try[1:]
 
             try:
                 uri = self.get_verified_image(
-                    visual_query=query,
+                    visual_query=primary_query,
                     question_context=context,
                     alt_queries=alt_queries,
                     question_dict=q
@@ -350,7 +383,7 @@ class ImageManager:
                 q["image_data_uri"] = uri
             except Exception as e:
                 logger.warning(f"Error fetching image for Q{q.get('num')}: {e}")
-                q["image_data_uri"] = self._generate_fallback_badge(query)
+                q["image_data_uri"] = self._generate_fallback_badge(primary_query)
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = [executor.submit(_fetch_single, q) for q in questions]
