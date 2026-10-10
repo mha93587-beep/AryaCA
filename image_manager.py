@@ -1,8 +1,10 @@
 import os
 import io
 import re
+import json
 import base64
 import logging
+import threading
 import requests
 from typing import Optional, List
 from PIL import Image, ImageDraw
@@ -11,9 +13,109 @@ from gemini_engine import GeminiRotationEngine
 logger = logging.getLogger("image_manager")
 logging.basicConfig(level=logging.INFO)
 
+class ApifyRotationManager:
+    """
+    Thread-safe rotation engine for Apify Google Images API keys.
+    Automatically rotates keys upon rate limiting (HTTP 429), quota limits (402, 403),
+    or network timeouts.
+    """
+    def __init__(self, keys: Optional[List[str]] = None):
+        self._lock = threading.Lock()
+        if keys:
+            self.keys = [k.strip() for k in keys if k and k.strip()]
+        else:
+            raw = os.getenv("APIFY_API") or os.getenv("APIFY_API_KEYS") or os.getenv("APIFY_API_KEY") or ""
+            self.keys = [k.strip() for k in raw.replace("\n", ",").split(",") if k.strip()]
+        self._index = 0
+        if self.keys:
+            logger.info(f"🔑 Initialized ApifyRotationManager with {len(self.keys)} API key(s).")
+        else:
+            logger.info("ℹ️ No Apify API keys configured in environment.")
+
+    @property
+    def has_keys(self) -> bool:
+        return len(self.keys) > 0
+
+    def get_current_key(self) -> Optional[str]:
+        with self._lock:
+            if not self.keys:
+                return None
+            return self.keys[self._index % len(self.keys)]
+
+    def rotate_to_next_key(self, failed_key: Optional[str] = None, reason: str = "") -> Optional[str]:
+        with self._lock:
+            if not self.keys:
+                return None
+            curr = self.keys[self._index % len(self.keys)]
+            if failed_key and curr != failed_key:
+                # Key was already advanced by another concurrent worker
+                return curr
+            self._index = (self._index + 1) % len(self.keys)
+            new_key = self.keys[self._index]
+            masked_old = (failed_key[:8] + "..." + failed_key[-4:]) if failed_key and len(failed_key) > 12 else "key"
+            masked_new = (new_key[:8] + "..." + new_key[-4:]) if len(new_key) > 12 else "new_key"
+            logger.warning(f"🔄 Auto-rotated Apify key from {masked_old} to {masked_new} (reason: {reason})")
+            return new_key
+
+    def search_google_images(self, query: str, session: requests.Session, max_results: int = 50) -> List[str]:
+        if not self.has_keys:
+            return []
+
+        attempts = 0
+        max_attempts = len(self.keys)
+
+        while attempts < max_attempts:
+            token = self.get_current_key()
+            if not token:
+                break
+
+            url = f"https://api.apify.com/v2/acts/johnvc~google-images-api/run-sync-get-dataset-items?token={token}"
+            payload = {
+                "queries": [query],
+                "maxResultsPerQuery": max_results,
+                "gl": "in",
+                "hl": "en"
+            }
+
+            try:
+                res = session.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=35)
+                if res.status_code in (200, 201):
+                    data = res.json()
+                    image_urls = []
+                    if isinstance(data, list):
+                        for item in data:
+                            u = item.get("imageUrl")
+                            thumb = item.get("thumbnailUrl")
+                            if u and u.startswith("http") and not any(bad in u.lower() for bad in [".svg", ".gif"]):
+                                image_urls.append(u)
+                            elif thumb and thumb.startswith("http"):
+                                image_urls.append(thumb)
+                    logger.info(f"🌐 [Apify Google Images] Found {len(image_urls)} images for '{query}' (key: {token[:8]}...)")
+                    return image_urls
+                elif res.status_code in (429, 402, 403):
+                    reason = f"HTTP {res.status_code} (Rate limit / Quota exceeded)"
+                    self.rotate_to_next_key(failed_key=token, reason=reason)
+                    attempts += 1
+                else:
+                    logger.warning(f"Apify returned HTTP {res.status_code}: {res.text[:150]}")
+                    self.rotate_to_next_key(failed_key=token, reason=f"HTTP {res.status_code}")
+                    attempts += 1
+            except requests.Timeout:
+                logger.warning(f"Apify request timed out (>35s) on key {token[:8]}... Rotating to next key.")
+                self.rotate_to_next_key(failed_key=token, reason="Timeout")
+                attempts += 1
+            except Exception as e:
+                logger.warning(f"Apify error on key {token[:8]}...: {e}")
+                self.rotate_to_next_key(failed_key=token, reason=str(e))
+                attempts += 1
+
+        logger.warning(f"⚠️ Exhausted all {len(self.keys)} Apify key(s) for query: '{query}'. Falling back to multi-engine.")
+        return []
+
 class ImageManager:
-    def __init__(self, engine: Optional[GeminiRotationEngine] = None):
+    def __init__(self, engine: Optional[GeminiRotationEngine] = None, apify_keys: Optional[List[str]] = None):
         self.engine = engine or GeminiRotationEngine()
+        self.apify = ApifyRotationManager(keys=apify_keys)
         self.session = requests.Session()
         self.session.headers.update({
             "User-Agent": "AryaCABot/1.0 (https://t.me/AryaCAtg; bot@aryaca.org) Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
@@ -86,7 +188,7 @@ class ImageManager:
             if not candidate_urls:
                 continue
 
-            for url in candidate_urls[:3]:
+            for url in candidate_urls[:6]:
                 try:
                     resp = self.session.get(url, timeout=6)
                     if resp.status_code == 200 and len(resp.content) > 4000:
@@ -131,7 +233,7 @@ class ImageManager:
                     continue
                 logger.info(f"🔍 [Dynamic AI Query] Searching HD photo for: '{ai_q}'...")
                 candidate_urls = self._search_candidate_urls(ai_q)
-                for url in candidate_urls[:3]:
+                for url in candidate_urls[:6]:
                     try:
                         resp = self.session.get(url, timeout=6)
                         if resp.status_code == 200 and len(resp.content) > 4000:
@@ -195,13 +297,49 @@ class ImageManager:
         urls = []
         cleaned_query = query.replace('"', '').replace("'", "").strip()
 
-        # Source 1: Check Wikipedia Lead Image FIRST for entities (people, institutions, courts)
+        # Source 1: Check Wikipedia Lead Image for recognized entities (people, institutions, courts)
         if len(cleaned_query.split()) <= 4 and not any(w in cleaned_query.lower() for w in ("meeting", "drawing", "scene", "wallpaper", "workers")):
             wiki_thumb = self._search_wikipedia_thumbnail(cleaned_query)
             if wiki_thumb:
                 urls.append(wiki_thumb)
 
-        # Source 2: High-Yield Bing Image Search (Real photographic news & event images)
+        # Source 2: Google Images via Apify (Premier Tier - Highest Accuracy & Photographic Quality)
+        if hasattr(self, "apify") and self.apify.has_keys:
+            try:
+                apify_urls = self.apify.search_google_images(cleaned_query, self.session)
+                for u in apify_urls[:10]:
+                    if u not in urls:
+                        urls.append(u)
+            except Exception as e:
+                logger.warning(f"Apify Google Images search error: {e}")
+
+        # Source 3: Wikimedia Commons File API (Open access HD real photos)
+        try:
+            commons_url = "https://commons.wikimedia.org/w/api.php"
+            params = {
+                "action": "query",
+                "generator": "search",
+                "gsrsearch": cleaned_query,
+                "gsrnamespace": 6,
+                "gsrlimit": 4,
+                "prop": "imageinfo",
+                "iiprop": "url",
+                "iiurlwidth": 800,
+                "format": "json"
+            }
+            res = self.session.get(commons_url, params=params, timeout=5)
+            if res.status_code == 200:
+                pages = res.json().get("query", {}).get("pages", {})
+                for _, page in pages.items():
+                    info = page.get("imageinfo", [{}])[0]
+                    thumb = info.get("thumburl") or info.get("url")
+                    if thumb and thumb.startswith("http") and not any(bad in thumb.lower() for bad in [".svg", ".gif"]):
+                        if thumb not in urls:
+                            urls.append(thumb)
+        except Exception as e:
+            logger.debug(f"Wikimedia Commons search error: {e}")
+
+        # Source 4: High-Yield Bing Image Search (Real photographic news & event images)
         try:
             encoded = requests.utils.quote(cleaned_query)
             bing_url = f"https://www.bing.com/images/search?q={encoded}&first=1&scenario=ImageBasicHover"
@@ -209,13 +347,15 @@ class ImageManager:
             if r.status_code == 200:
                 matches = re.findall(r'murl&quot;:&quot;(http[^&]+)&quot;', r.text)
                 for u in matches:
-                    if u.startswith("http") and not any(bad in u.lower() for bad in [".svg", ".gif", "logo_placeholder"]):
-                        if u not in urls:
-                            urls.append(u)
+                    u_low = u.lower()
+                    if any(spam in u_low for spam in ["vecteezy", "oyorooms", "upsccolorfullnotes", "mapasmilhaud", ".svg", ".gif"]):
+                        continue
+                    if u.startswith("http") and u not in urls:
+                        urls.append(u)
         except Exception as e:
             logger.warning(f"Bing image search error: {e}")
 
-        # Source 3: High-Yield Yandex Images Search (Vast global and national news image index)
+        # Source 5: High-Yield Yandex Images Search (Vast global and national news image index)
         try:
             yandex_url = f"https://yandex.com/images/search?text={requests.utils.quote(cleaned_query)}"
             yr = self.session.get(yandex_url, timeout=5)
@@ -223,43 +363,13 @@ class ImageManager:
                 y_matches = re.findall(r'img_url=([^&]+)&', yr.text)
                 for ym in y_matches:
                     decoded_u = requests.utils.unquote(ym)
-                    if decoded_u.startswith("http") and not any(bad in decoded_u.lower() for bad in [".svg", ".gif", "logo_placeholder"]):
-                        if decoded_u not in urls:
-                            urls.append(decoded_u)
+                    decoded_low = decoded_u.lower()
+                    if any(spam in decoded_low for spam in ["vecteezy", "oyorooms", "upsccolorfullnotes", "mapasmilhaud", ".svg", ".gif"]):
+                        continue
+                    if decoded_u.startswith("http") and decoded_u not in urls:
+                        urls.append(decoded_u)
         except Exception as e:
             logger.debug(f"Yandex image search error: {e}")
-
-        # Source 4: Wikipedia Lead Image fallback if not already appended
-        if not urls:
-            wiki_thumb = self._search_wikipedia_thumbnail(cleaned_query)
-            if wiki_thumb and wiki_thumb not in urls:
-                urls.append(wiki_thumb)
-
-        # Source 3: Wikimedia Commons File API (Open access HD photos)
-        if len(urls) < 4:
-            try:
-                commons_url = "https://commons.wikimedia.org/w/api.php"
-                params = {
-                    "action": "query",
-                    "generator": "search",
-                    "gsrsearch": cleaned_query,
-                    "gsrnamespace": 6,
-                    "gsrlimit": 3,
-                    "prop": "imageinfo",
-                    "iiprop": "url",
-                    "iiurlwidth": 600,
-                    "format": "json"
-                }
-                res = self.session.get(commons_url, params=params, timeout=5)
-                if res.status_code == 200:
-                    pages = res.json().get("query", {}).get("pages", {})
-                    for _, page in pages.items():
-                        info = page.get("imageinfo", [{}])[0]
-                        thumb = info.get("thumburl") or info.get("url")
-                        if thumb and thumb.startswith("http") and thumb not in urls:
-                            urls.append(thumb)
-            except Exception as e:
-                logger.warning(f"Wikimedia Commons search error: {e}")
 
         return urls
 
@@ -291,23 +401,31 @@ class ImageManager:
         draw.rectangle([14, 14, 466, 306], fill=(30, 41, 59))
 
         base_dir = os.path.dirname(os.path.abspath(__file__))
-        font_path = os.path.join(base_dir, "static", "fonts", "NotoSerifDevanagari-Bold.ttf")
-        if not os.path.exists(font_path):
-            font_path = "/usr/share/fonts/truetype/noto/NotoSerifDevanagari-Bold.ttf"
+        latin_font_path = os.path.join(base_dir, "static", "fonts", "NotoSans-Bold.ttf")
+        if not os.path.exists(latin_font_path):
+            latin_font_path = "/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf"
+        if not os.path.exists(latin_font_path):
+            latin_font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+
+        deva_font_path = os.path.join(base_dir, "static", "fonts", "NotoSerifDevanagari-Bold.ttf")
+        if not os.path.exists(deva_font_path):
+            deva_font_path = "/usr/share/fonts/truetype/noto/NotoSerifDevanagari-Bold.ttf"
 
         try:
             from PIL import ImageFont
-            font_title = ImageFont.truetype(font_path, 26)
-            font_body = ImageFont.truetype(font_path, 22)
-            font_small = ImageFont.truetype(font_path, 18)
+            font_title = ImageFont.truetype(latin_font_path, 24)
+            font_small = ImageFont.truetype(latin_font_path, 16)
+            font_brand = ImageFont.truetype(latin_font_path, 22)
+            has_deva = any('\u0900' <= char <= '\u097f' for char in topic)
+            font_body = ImageFont.truetype(deva_font_path if has_deva else latin_font_path, 20)
         except Exception:
-            font_title = font_body = font_small = None
+            font_title = font_body = font_small = font_brand = None
 
         draw.text((30, 35), "AryaCA Exam Focus", fill=(245, 158, 11), font=font_title)
         words = topic[:35].replace("_", " ")
         draw.text((30, 105), words, fill=(248, 250, 252), font=font_body)
         draw.text((30, 180), "Current Affairs Special Edition", fill=(148, 163, 184), font=font_small)
-        draw.text((30, 245), "@AryaCAtg", fill=(56, 189, 248), font=font_title)
+        draw.text((30, 245), "@AryaCAtg", fill=(56, 189, 248), font=font_brand)
 
         buf = io.BytesIO()
         img.save(buf, format="JPEG", quality=88)
