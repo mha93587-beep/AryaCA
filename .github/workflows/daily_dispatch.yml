@@ -2,8 +2,9 @@ name: AryaCA Daily Current Affairs Automated Dispatch (6:00 AM IST)
 
 on:
   schedule:
-    # 00:30 UTC = 06:00 AM IST daily (IST is UTC + 5:30)
-    - cron: '30 0 * * *'
+    # 00:15 UTC = 05:45 AM IST daily (avoids GitHub Actions :00 and :30 queue backlog)
+    # Ensures 30-MCQ curation and rendering finishes right before 06:00 AM IST
+    - cron: '15 0 * * *'
   workflow_dispatch:
     inputs:
       question_count:
