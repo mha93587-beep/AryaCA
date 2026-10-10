@@ -32,7 +32,7 @@ class NewsCurator:
     def __init__(self, engine: Optional[GeminiRotationEngine] = None):
         self.engine = engine or GeminiRotationEngine()
 
-    def curate_daily_questions(self, date_str: str, count: int = 30, categories: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+    def curate_daily_questions(self, date_str: str, count: int = 50, categories: Optional[List[str]] = None) -> List[Dict[str, Any]]:
         logger.info(f"📰 Curating {count} comprehensive questions for date: {date_str}...")
 
         if count <= 10:
@@ -48,48 +48,81 @@ class NewsCurator:
                 curation_theme="Balance topics across National/PIB, Bihar Special, Frontier AI/Tech, and World Geopolitics."
             )
 
-        # For 20 to 30 questions: curate across multi-domain thematic batches
+        # For 20 to 50 questions: curate across 5 specialized thematic batches covering all competitive exam dimensions
         batch_configs = [
             {
-                "title": "National & Bihar Governance",
+                "title": "National Governance, PIB Releases & Central Schemes",
                 "grounding_query": (
                     f"Search for top national news events, PIB press releases, Union Cabinet decisions, "
-                    f"Supreme Court & High Court judgments, central government schemes, and Bihar state government announcements of {date_str}. "
+                    f"Parliament enactments, central government schemes, flagship welfare initiatives, and national infrastructure projects of {date_str}. "
                     "List 12 verified factual news developments with specifics."
                 ),
                 "curation_theme": (
                     "Focus heavily on: National Governance, PIB releases, Central Schemes, Cabinet decisions, "
-                    "Constitutional & Judiciary developments, and Bihar State Affairs (BPSC/BSSC special)."
+                    "National summits, Government portals, and Infrastructure milestones."
                 )
             },
             {
-                "title": "International, Defense & Frontier Technology",
+                "title": "Bihar & State Special, Judiciary & Constitutional Developments",
                 "grounding_query": (
-                    f"Search for top global affairs, international summits, bilateral agreements, defense exercises, "
-                    f"space missions (ISRO, NASA), and frontier AI & semiconductor developments of {date_str}. "
+                    f"Search for top Bihar state government announcements, cabinet decisions, BPSC/BSSC exam relevant state schemes, "
+                    f"appointments, infrastructure in Bihar, along with Supreme Court and High Court landmark judgments and constitutional developments of {date_str}. "
                     "List 12 verified factual news developments with specifics."
                 ),
                 "curation_theme": (
-                    "Focus heavily on: International Geopolitics, Global Summits, Bilateral Treaties, "
-                    "Defense & Military exercises, Space Exploration (ISRO/NASA), and Artificial Intelligence & Semiconductor computing chips."
+                    "Focus heavily on: Bihar State Affairs, Bihar Government Schemes & initiatives, State budget/surveys, "
+                    "Supreme Court & High Court judgments, Law & Constitutional developments, and other notable state governance events."
                 )
             },
             {
-                "title": "Sports, Economy, Awards & Appointments",
+                "title": "International Relations, Geopolitics & Global Summits",
                 "grounding_query": (
-                    f"Search for top sports tournaments, cricket/badminton/olympic wins, economic data, RBI announcements, "
-                    f"prestigious national & international awards, and prominent appointments of {date_str}. "
+                    f"Search for top international news, global geopolitics, United Nations, bilateral treaties, "
+                    f"foreign visits of heads of state, international summits (G20, BRICS, SCO, ASEAN, QUAD), global indices, and world diplomacy of {date_str}. "
                     "List 12 verified factual news developments with specifics."
                 ),
                 "curation_theme": (
-                    "Focus heavily on: Sports Championships & Records, Economy & Banking (RBI/SEBI/Indices), "
-                    "Prestigious Awards & Honors (Nobel, Padma, Sports awards), Prominent Appointments, and Books & Authors."
+                    "Focus heavily on: International Geopolitics, UN decisions, Bilateral MoUs and Treaties, "
+                    "Global Summits, Global Indices and rankings, International leaders, and World diplomacy."
+                )
+            },
+            {
+                "title": "Science & Technology, AI, Defense, Space & Environment",
+                "grounding_query": (
+                    f"Search for defense military/naval/airforce exercises, weapon systems, DRDO, space exploration missions (ISRO, NASA), "
+                    f"frontier AI, semiconductor chip technology, computing developments, environmental summits, COP, wildlife sanctuaries, and ecology news of {date_str}. "
+                    "List 12 verified factual news developments with specifics."
+                ),
+                "curation_theme": (
+                    "Focus heavily on: Military exercises & defense acquisitions, ISRO/NASA space missions, "
+                    "Artificial Intelligence & semiconductor chip innovations, Biotechnology, Renewable energy, Environment, Wildlife & Climate developments."
+                )
+            },
+            {
+                "title": "Economy, Banking, Sports, Awards, Appointments & Books",
+                "grounding_query": (
+                    f"Search for economic indicators, RBI circulars/repo rate, SEBI regulations, GDP forecasts, "
+                    f"major sports tournaments, cricket, badminton, athletics, chess, prestigious national/international awards and honors, "
+                    f"prominent CEO/constitutional appointments, and newly released books/authors of {date_str}. "
+                    "List 12 verified factual news developments with specifics."
+                ),
+                "curation_theme": (
+                    "Focus heavily on: Economy & Banking (RBI, SEBI, Inflation, Trade), Sports championships, medals & tournaments, "
+                    "Prestigious Awards & Honors, Prominent National & Global Appointments, Resignations, and Famous Books & Authors."
                 )
             }
         ]
 
-        # Determine number of questions per batch
-        num_batches = 3 if count > 20 else 2
+        # Determine number of questions per batch dynamically (5 batches for 50 questions)
+        if count >= 45:
+            num_batches = 5
+        elif count >= 30:
+            num_batches = 3
+        elif count > 15:
+            num_batches = 2
+        else:
+            num_batches = 1
+
         per_batch = count // num_batches
         remainder = count % num_batches
 

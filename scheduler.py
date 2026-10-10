@@ -21,7 +21,7 @@ from telegram_broadcaster import TelegramBroadcaster
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("AryaCA_Scheduler")
 
-def run_pipeline(date_str: str, count: int = 30, skip_telegram: bool = False, dry_run: bool = False):
+def run_pipeline(date_str: str, count: int = 50, skip_telegram: bool = False, dry_run: bool = False):
     logger.info("=" * 60)
     logger.info(f"🚀 AryaCA Daily Pipeline Starting for Date: {date_str} (Questions: {count})")
     logger.info("=" * 60)
@@ -44,7 +44,7 @@ def run_pipeline(date_str: str, count: int = 30, skip_telegram: bool = False, dr
     # Step 3: Fetch & Verify Topic Images
     logger.info(f"3️⃣ Concurrently fetching & Gemini Vision-verifying topic photos for {len(questions)} questions...")
     img_mgr = ImageManager(engine=engine)
-    img_mgr.fetch_images_for_questions(questions=questions, max_workers=3)
+    img_mgr.fetch_images_for_questions(questions=questions, max_workers=4)
 
     # Step 4: Render Multi-Page Dual-Column A4 PDF & Page 1 Preview
     logger.info("4️⃣ Compiling Multi-Page Dual-Column A4 Magazine PDF with WeasyPrint & Noto Serif...")
@@ -79,7 +79,7 @@ def main():
     parser = argparse.ArgumentParser(description="AryaCA Daily Current Affairs Engine - Automated Pipeline")
     today_str = datetime.now().strftime("%Y-%m-%d")
     parser.add_argument("--date", default=today_str, help="Edition date in YYYY-MM-DD format")
-    parser.add_argument("--count", type=int, default=30, help="Number of questions (default: 30, 3 full pages. Supports 20 to 30)")
+    parser.add_argument("--count", type=int, default=50, help="Number of questions (default: 50, 5 full pages. Supports 20 to 50)")
     parser.add_argument("--no-telegram", action="store_true", help="Skip sending to Telegram channels")
     parser.add_argument("--dry-run", action="store_true", help="Test run without generating full assets")
 

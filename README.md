@@ -72,11 +72,11 @@ CHANNEL_HANDLE=@AryaCAtg
 
 #### Run Automated Pipeline (CLI / Cron)
 ```bash
-# Default (20 questions, 2 full pages)
+# Default (50 questions, 5 full pages)
 python3 scheduler.py
 
-# Specify date and custom question count (e.g., 30 questions, 3 full pages)
-python3 scheduler.py --date 2026-10-09 --count 30
+# Specify date and custom question count (e.g., 50 questions, 5 full pages)
+python3 scheduler.py --date 2026-10-09 --count 50
 
 # Dry-run mode without Telegram broadcast
 python3 scheduler.py --dry-run

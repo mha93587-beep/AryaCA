@@ -3,14 +3,14 @@ name: AryaCA Daily Current Affairs Automated Dispatch (6:00 AM IST)
 on:
   schedule:
     # 00:15 UTC = 05:45 AM IST daily (avoids GitHub Actions :00 and :30 queue backlog)
-    # Ensures 30-MCQ curation and rendering finishes right before 06:00 AM IST
+    # Ensures 50-MCQ curation and rendering finishes right before 06:00 AM IST
     - cron: '15 0 * * *'
   workflow_dispatch:
     inputs:
       question_count:
-        description: 'Number of MCQs to curate (default: 30)'
+        description: 'Number of MCQs to curate (default: 50)'
         required: false
-        default: '30'
+        default: '50'
       date:
         description: 'Date override (YYYY-MM-DD, optional)'
         required: false
@@ -74,7 +74,7 @@ jobs:
 
       - name: 🚀 Run Autonomous Daily Pipeline
         run: |
-          COUNT="${{ inputs.question_count || '30' }}"
+          COUNT="${{ inputs.question_count || '50' }}"
           EXTRA_ARGS=""
           if [ -n "${{ inputs.date }}" ]; then
             EXTRA_ARGS="$EXTRA_ARGS --date ${{ inputs.date }}"

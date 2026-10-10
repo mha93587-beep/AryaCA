@@ -46,3 +46,32 @@ def test_answer_key_distribution_balancing():
         ans_idx = int(q["correct_ans"]) - 1
         assert f"Correct {q['num']}" == q["options"][ans_idx]["val"]
         assert q["options"][4]["val"] == "अनुत्तरित प्रश्न / Prefer not to answer"
+
+def test_answer_key_distribution_balancing_50_questions():
+    from news_curator import NewsCurator
+    curator = NewsCurator()
+    mock_questions = []
+    for i in range(50):
+        mock_questions.append({
+            "num": i + 1,
+            "correct_ans": "1",  # Biased input from LLM
+            "options": [
+                {"key": "1", "val": f"Correct {i+1}"},
+                {"key": "2", "val": f"Distractor A {i+1}"},
+                {"key": "3", "val": f"Distractor B {i+1}"},
+                {"key": "4", "val": f"Distractor C {i+1}"},
+                {"key": "5", "val": "अनुत्तरित प्रश्न / Prefer not to answer"}
+            ]
+        })
+    balanced = curator._balance_and_shuffle_options(mock_questions)
+    assert len(balanced) == 50
+    counts = {k: sum(1 for q in balanced if q["correct_ans"] == k) for k in ["1", "2", "3", "4"]}
+    # In 50 questions: two keys will be 13 and two keys will be 12 (exact ~25% each)
+    for k in ["1", "2", "3", "4"]:
+        assert counts[k] in [12, 13], f"Expected 12 or 13 for key {k}, got {counts[k]}"
+    assert sum(counts.values()) == 50
+
+    for q in balanced:
+        ans_idx = int(q["correct_ans"]) - 1
+        assert f"Correct {q['num']}" == q["options"][ans_idx]["val"]
+        assert q["options"][4]["val"] == "अनुत्तरित प्रश्न / Prefer not to answer"

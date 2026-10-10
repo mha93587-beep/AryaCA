@@ -81,3 +81,25 @@ def test_multipage_pdf_generation():
     reader_30 = pypdf.PdfReader(pdf_path_30)
     assert len(reader_30.pages) == 3
     assert os.path.exists(png_path_30)
+
+    # 50 questions -> exactly 5 pages
+    qs_50 = [
+        {
+            "num": i + 1,
+            "question_hi": f"परीक्षण प्रश्न {i+1}?",
+            "question_en": f"Test Question {i+1}?",
+            "options": [
+                {"key": "1", "val": "A"}, {"key": "2", "val": "B"},
+                {"key": "3", "val": "C"}, {"key": "4", "val": "D"},
+                {"key": "5", "val": "अनुत्तरित प्रश्न / Prefer not to answer"}
+            ],
+            "correct_ans": "1",
+            "image_data_uri": None,
+            "exam_fact_hi": "तथ्य", "exam_fact_en": "Fact"
+        }
+        for i in range(50)
+    ]
+    pdf_path_50, png_path_50 = gen.generate_edition("2026-10-09", qs_50)
+    reader_50 = pypdf.PdfReader(pdf_path_50)
+    assert len(reader_50.pages) == 5
+    assert os.path.exists(png_path_50)
