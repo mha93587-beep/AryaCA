@@ -20,7 +20,9 @@ class ExamQuestion(BaseModel):
     correct_ans: str = Field(description="Correct option number key: '1', '2', '3', or '4'")
     exam_fact_hi: str = Field(description="Exam fact / Lallantop Static GK connection in Hindi (1-2 sentences)")
     exam_fact_en: str = Field(description="Exam fact in English (1-2 sentences)")
-    visual_query: str = Field(description="2 to 4 precise English keywords for searching the exact real-world photo for this question")
+    visual_query: str = Field(description="Primary high-impact English search query for an authentic, premium photograph")
+    image_search_queries: List[str] = Field(default_factory=list, description="3 to 4 diverse, dynamic English search queries tailored to this exact question: [1: exact news event/verdict/launch photo, 2: tangible real-world scene/activity, 3: core institution building/person, 4: premium thematic context]")
+    alt_visual_queries: List[str] = Field(default_factory=list, description="2 to 3 alternative photographic search queries for fallback compatibility")
     exam_tags: str = Field(default="[RRB | SSC | BPSC]", description="Target competitive exams e.g. [RRB Special], [SSC CGL], [BPSC Special]")
 
 class DailyCuratedNews(BaseModel):
@@ -144,9 +146,18 @@ class NewsCurator:
             "   - Option 5: MUST be strictly 'अनुत्तरित प्रश्न / Prefer not to answer' (BPSC/RRB modern format)\n"
             "5. 'correct_ans' MUST be '1', '2', '3', or '4'. Randomize the answer keys evenly.\n"
             "6. 'exam_fact_hi' & 'exam_fact_en': Provide rich, high-yield 'Lallantop Baatein' / Static GK connections (e.g. related constitutional article, ministry, headquarters, previous year exam facts).\n"
-            "7. 'visual_query': 2 to 4 precise English search keywords to fetch a widely recognized, high-visibility REAL-WORLD OBJECT, LANDMARK, PERSON, or EMBLEM. "
-            "NEVER output abstract policy names (like 'Policy 2026 draft' or 'Campaign 6.0'). "
-            "Always output concrete visual subjects (e.g. 'Nitish Kumar Bihar Patna', 'Supreme Court of India New Delhi', 'ISRO rocket launch', 'OpenAI logo San Francisco', 'Donald Trump portrait')."
+            "7. DYNAMIC VISUAL SEARCH QUERY GENERATION (No hardcoding, purely question-driven):\n"
+            "   For each question, you MUST dynamically craft 3 to 4 hyper-targeted English search queries in 'image_search_queries' and set the best one in 'visual_query'.\n"
+            "   CRITICAL RULES:\n"
+            "   - NEVER output raw numbers, percentages, or abstract policy acronyms (DO NOT output: 'repo rate 25 basis points', 'SME Growth Fund', 'Bharat-VISTAAR AI platform', 'OBC reservation 27 percent'). Abstract numbers return ugly spreadsheets or number graphs!\n"
+            "   - Tailor the queries dynamically to the specific question like this:\n"
+            "     * Court verdicts: 'Madhya Pradesh OBC reservation 14 percent 27 percent High Court verdict 2026', 'Madhya Pradesh High Court Jabalpur building exterior high quality photo', 'Indian judiciary scales of justice gavel constitution background'\n"
+            "     * Industrial/SME funds: 'Indian MSME manufacturing factory workers machinery high quality', 'SME business funding investment growth professional photo'\n"
+            "     * Agriculture/AI: 'Indian farmer using smartphone in green field AI smart agriculture high quality', 'Bharat-VISTAAR AI agriculture platform official launch 2026'\n"
+            "     * Banking/RBI: 'Reserve Bank of India Mumbai headquarters building exterior', 'Shaktikanta Das RBI Governor press conference photo', 'Reserve Bank of India official logo high quality'\n"
+            "     * International awards/UNESCO: 'UNESCO Prize for Girls and Women Education ceremony photo', 'UNESCO headquarters Paris building exterior', 'Girls classroom education empowerment school high quality photo'\n"
+            "     * Sports/Cricket: 'Asian Games cricket team India celebration', 'India cricket team gold medal celebration Asian Games 2026'\n"
+            "   Set 'visual_query' as the top tangible photo query, and provide 3-4 distinct queries in 'image_search_queries'."
         )
 
         try:
