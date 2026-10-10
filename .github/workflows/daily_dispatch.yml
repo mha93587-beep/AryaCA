@@ -34,6 +34,8 @@ jobs:
     env:
       TZ: 'Asia/Kolkata'
       GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
+      APIFY_API_KEYS: ${{ secrets.APIFY_API_KEYS }}
+      APIFY_API: ${{ secrets.APIFY_API }}
       TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
       TG_CHANNEL_CHAT_IDS: ${{ secrets.TG_CHANNEL_CHAT_IDS }}
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
