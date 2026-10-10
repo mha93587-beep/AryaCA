@@ -35,10 +35,10 @@ class ImageManager:
             "Rules:\n"
             "1. NEVER use generic numbers, percentages, or abstract policy acronyms that produce number charts or text slides.\n"
             "2. Think visually and creatively:\n"
-            "   - Exact event / ceremony / verdict / summit photo (e.g. 'Madhya Pradesh OBC reservation 14 percent 27 percent High Court verdict 2026')\n"
-            "   - Tangible real-world professional scene or field activity (e.g. 'Indian farmer using smartphone in green field AI smart agriculture high quality' or 'Indian MSME manufacturing factory workers machinery high quality')\n"
-            "   - Headquarters building, architectural landmark, or key leader portrait (e.g. 'Reserve Bank of India Mumbai headquarters building exterior' or 'UNESCO headquarters Paris')\n"
-            "   - Premium symbolic context or emblem (e.g. 'Indian judiciary scales of justice gavel constitution background')\n\n"
+            "   - Exact news event, ceremony, bilateral handshake, or press conference\n"
+            "   - Tangible real-world professional scene or field activity (e.g. modern farming, manufacturing, technology lab)\n"
+            "   - Architectural headquarters building, landmark, or leader official portrait\n"
+            "   - Premium symbolic context, judicial scales, emblem, or national seal\n\n"
             "Return valid JSON array of strings: [\"query1\", \"query2\", \"query3\", \"query4\"]"
         )
         try:
@@ -327,7 +327,7 @@ class ImageManager:
             query = q.get("visual_query") or q.get("question_en", "")[:35]
             context = f"{q.get('question_hi')} / {q.get('question_en')}"
             
-            # 1. Extract and clean the correct answer entity (e.g. "Shri Jagdeep Dhankhar" -> "Jagdeep Dhankhar")
+            # 1. Extract and clean the correct answer entity (only if it represents a named entity/person/institution)
             correct_entity = None
             correct_ans_key = str(q.get("correct_ans", "")).strip()
             options = q.get("options", [])
@@ -338,25 +338,23 @@ class ImageManager:
                     en_part = parts[-1].strip() if len(parts) > 1 else parts[0].strip()
                     if en_part and len(en_part) > 2 and "Prefer not" not in en_part:
                         cleaned = re.sub(r'(?i)\b(shri|shree|dr|honble|mr|mrs|ms)\b', '', en_part).strip()
-                        correct_entity = cleaned or en_part
+                        # Strictly reject numbers, percentages, financial outlays, units, or non-visual text
+                        if not re.search(r'\d|%|percent|crore|lakh|basis point|month|year|day|satellite|answer', cleaned.lower()):
+                            correct_entity = cleaned or en_part
                     break
 
             # 2. Build prioritized query list:
-            # If the correct answer is a specific entity (like a leader, company, institution),
-            # place it FIRST because searching the exact entity name gives an instant 100% relevant hit!
+            # The AI-crafted 'visual_query' is specifically designed for this question, so it is ALWAYS Attempt #1.
             queries_to_try = []
-            if correct_entity and len(correct_entity.split()) <= 4:
-                queries_to_try.append(correct_entity)
-
-            if query and query.strip() and query.strip() not in queries_to_try:
+            if query and query.strip():
                 queries_to_try.append(query.strip())
 
             for aq in (q.get("image_search_queries") or q.get("alt_visual_queries") or []):
                 if aq and aq.strip() and aq.strip() not in queries_to_try:
                     queries_to_try.append(aq.strip())
 
-            # If correct entity was longer, add it here
-            if correct_entity and correct_entity not in queries_to_try:
+            # If the correct answer is a specific named entity (e.g. a leader, company, institution), add as alternative
+            if correct_entity and len(correct_entity.split()) <= 4 and correct_entity not in queries_to_try:
                 queries_to_try.append(correct_entity)
 
             # 3. If no alternative queries exist, ask AI to dynamically research tailored visual queries
