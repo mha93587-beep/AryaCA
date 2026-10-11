@@ -332,13 +332,13 @@
                 <line x1="16" y1="2" x2="16" y2="6"></line>
                 <line x1="8" y1="2" x2="8" y2="6"></line>
                 <line x1="3" y1="10" x2="21" y2="10"></line>
-              </svg>{{ edition_date_hi }}
+              </svg>{{ edition_date_hi }}{% if shift_num %} • शिफ्ट {{ shift_num }}{% endif %}
             </span>
           </a>
         </td>
         <td class="header-cell" style="text-align: right; width: 35%;">
           <a href="{{ channel_url or 'https://t.me/AryaCAtg' }}" class="header-block-link" style="text-align: right;">
-            <span class="header-tag">Daily Current Affairs | {% if page.total_pages > 1 %}Page {{ page.page_num }}/{{ page.total_pages }}{% else %}Daily MCQs{% endif %}</span>
+            <span class="header-tag">{% if shift_num %}शिफ्ट {{ shift_num }}{% if time_str_ist %} ({{ time_str_ist }}){% endif %} | {% endif %}{% if page.total_pages > 1 %}Page {{ page.page_num }}/{{ page.total_pages }}{% else %}Daily MCQs{% endif %}</span>
           </a>
         </td>
       </tr>

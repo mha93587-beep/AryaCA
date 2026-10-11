@@ -33,8 +33,10 @@ class TelegramBroadcaster:
                           pdf_path: str, 
                           preview_png_path: Optional[str] = None, 
                           date_str: str = "", 
-                          question_count: int = 20,
-                          top_topics: Optional[List[str]] = None) -> Dict[str, bool]:
+                          question_count: int = 50,
+                          top_topics: Optional[List[str]] = None,
+                          shift_num: Optional[int] = None,
+                          time_str_ist: Optional[str] = None) -> Dict[str, bool]:
         if not self.bot_token:
             raise ValueError("Cannot broadcast: TG_BOT_TOKEN is missing.")
         if not self.channel_ids:
@@ -44,12 +46,18 @@ class TelegramBroadcaster:
         caption_lines = [
             f"🌟 <b>AryaCA | दैनिक करंट अफेयर्स व MCQs</b>",
             f"📅 <b>तारीख:</b> {date_str}",
+        ]
+        if shift_num:
+            time_part = f" ({time_str_ist})" if time_str_ist else ""
+            caption_lines.append(f"⏰ <b>शिफ्ट:</b> शिफ्ट {shift_num}{time_part}")
+
+        caption_lines.extend([
             "",
             "🎯 <b>लक्षित परीक्षाएं:</b> RRB NTPC | Group D | SSC CGL | BPSC | BSSC",
             "",
             "👇 <b>संपूर्ण HD मैगजीन PDF नीचे संलग्न है</b> 👇",
             "🔗 <b>चैनल जॉइन करें:</b> @AryaCAtg"
-        ]
+        ])
         caption_text = "\n".join(caption_lines)
 
         for channel in self.channel_ids:
@@ -77,7 +85,9 @@ class TelegramBroadcaster:
                 # 2. Send PDF Document
                 if os.path.exists(pdf_path):
                     doc_url = f"https://api.telegram.org/bot{self.bot_token}/sendDocument"
-                    doc_caption = f"📄 <b>AryaCA Daily Magazine</b> ({date_str})\n@AryaCAtg"
+                    shift_tag = f" • शिफ्ट {shift_num}" if shift_num else ""
+                    time_tag = f" • {time_str_ist}" if time_str_ist else ""
+                    doc_caption = f"📄 <b>AryaCA Daily Magazine</b> ({date_str}{shift_tag}{time_tag})\n@AryaCAtg"
                     with open(pdf_path, "rb") as f:
                         resp = requests.post(
                             doc_url,

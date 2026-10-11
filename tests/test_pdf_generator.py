@@ -103,3 +103,33 @@ def test_multipage_pdf_generation():
     reader_50 = pypdf.PdfReader(pdf_path_50)
     assert len(reader_50.pages) == 5
     assert os.path.exists(png_path_50)
+
+def test_shift_pdf_generation():
+    from pdf_generator import PDFGenerator
+    gen = PDFGenerator()
+    qs = [
+        {
+            "num": i + 1,
+            "question_hi": f"परीक्षण प्रश्न {i+1}?",
+            "question_en": f"Test Question {i+1}?",
+            "options": [
+                {"key": "1", "val": "A"}, {"key": "2", "val": "B"},
+                {"key": "3", "val": "C"}, {"key": "4", "val": "D"},
+                {"key": "5", "val": "अनुत्तरित प्रश्न / Prefer not to answer"}
+            ],
+            "correct_ans": "1",
+            "image_data_uri": None,
+            "exam_fact_hi": "तथ्य", "exam_fact_en": "Fact"
+        }
+        for i in range(10)
+    ]
+    pdf_path, png_path = gen.generate_edition(
+        date_str="2026-10-11",
+        questions=qs,
+        shift_num=2,
+        time_str_ist="12:00 PM IST"
+    )
+    assert os.path.exists(pdf_path)
+    assert "Shift-2" in pdf_path
+    assert os.path.exists(png_path)
+    assert "Shift-2" in png_path

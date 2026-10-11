@@ -10,6 +10,10 @@ on:
         description: 'Number of MCQs to curate (default: 50)'
         required: false
         default: '50'
+      shift:
+        description: 'Shift number override (optional: 1, 2, 3... auto-detected if empty)'
+        required: false
+        default: ''
       date:
         description: 'Date override (YYYY-MM-DD, optional)'
         required: false
@@ -32,6 +36,7 @@ jobs:
 
     env:
       TZ: 'Asia/Kolkata'
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
       APIFY_API_KEYS: ${{ secrets.APIFY_API_KEYS }}
       APIFY_API: ${{ secrets.APIFY_API }}
@@ -75,6 +80,9 @@ jobs:
         run: |
           COUNT="${{ inputs.question_count || '50' }}"
           EXTRA_ARGS=""
+          if [ -n "${{ inputs.shift }}" ]; then
+            EXTRA_ARGS="$EXTRA_ARGS --shift ${{ inputs.shift }}"
+          fi
           if [ -n "${{ inputs.date }}" ]; then
             EXTRA_ARGS="$EXTRA_ARGS --date ${{ inputs.date }}"
           fi

@@ -40,8 +40,11 @@ class PDFGenerator:
                          questions: List[Dict[str, Any]], 
                          brand_name: str = "AryaCA", 
                          channel_handle: str = "@AryaCAtg",
-                         channel_url: Optional[str] = None) -> Tuple[str, str]:
-        logger.info(f"📄 Rendering AryaCA edition for {date_str} with {len(questions)} questions...")
+                         channel_url: Optional[str] = None,
+                         shift_num: Optional[int] = None,
+                         time_str_ist: Optional[str] = None) -> Tuple[str, str]:
+        shift_label = f" (Shift {shift_num})" if shift_num else ""
+        logger.info(f"📄 Rendering AryaCA edition for {date_str}{shift_label} with {len(questions)} questions...")
         template = self.jinja_env.get_template("daily_magazine.html")
         date_hi = self.format_date_hindi(date_str)
         effective_channel_url = channel_url or os.getenv("CHANNEL_URL", f"https://t.me/{channel_handle.lstrip('@')}")
@@ -66,12 +69,15 @@ class PDFGenerator:
             edition_date_hi=date_hi,
             pages=pages,
             total_pages=total_pages,
-            questions=questions
+            questions=questions,
+            shift_num=shift_num,
+            time_str_ist=time_str_ist or ""
         )
 
-        pdf_filename = f"AryaCA_Daily_{date_str}.pdf"
+        shift_suffix = f"_Shift-{shift_num}" if shift_num else ""
+        pdf_filename = f"AryaCA_Daily_{date_str}{shift_suffix}.pdf"
         pdf_path = os.path.join(self.output_dir, pdf_filename)
-        png_path = os.path.join(self.output_dir, f"AryaCA_Daily_{date_str}_preview.png")
+        png_path = os.path.join(self.output_dir, f"AryaCA_Daily_{date_str}{shift_suffix}_preview.png")
 
         # Compile PDF using WeasyPrint
         logger.info("🎨 Compiling HTML to PDF using WeasyPrint...")
