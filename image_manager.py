@@ -83,6 +83,14 @@ class ApifyRotationManager:
                     data = res.json()
                     image_urls = []
                     if isinstance(data, list):
+                        # Detect Apify Actor free tier quota notice returned inside HTTP 200/201 response
+                        if data and isinstance(data[0], dict) and (data[0].get("free_tier_notice") or "limit_reached" in str(data[0].get("notice", ""))):
+                            reason = f"Apify Actor Limit: {data[0].get('notice', 'free_tier_limit_reached')}"
+                            logger.warning(f"⚠️ {reason} on key {token[:8]}... Rotating to next key.")
+                            self.rotate_to_next_key(failed_key=token, reason=reason)
+                            attempts += 1
+                            continue
+
                         for item in data:
                             u = item.get("imageUrl")
                             thumb = item.get("thumbnailUrl")
@@ -90,10 +98,17 @@ class ApifyRotationManager:
                                 image_urls.append(u)
                             elif thumb and thumb.startswith("http"):
                                 image_urls.append(thumb)
+
+                    if not image_urls:
+                        logger.warning(f"Apify returned 0 images on key {token[:8]}... Rotating to next key.")
+                        self.rotate_to_next_key(failed_key=token, reason="Zero images returned")
+                        attempts += 1
+                        continue
+
                     logger.info(f"🌐 [Apify Google Images] Found {len(image_urls)} images for '{query}' (key: {token[:8]}...)")
                     return image_urls
-                elif res.status_code in (429, 402, 403):
-                    reason = f"HTTP {res.status_code} (Rate limit / Quota exceeded)"
+                elif res.status_code in (401, 402, 403, 429):
+                    reason = f"HTTP {res.status_code} (Rate limit / Invalid / Quota exceeded)"
                     self.rotate_to_next_key(failed_key=token, reason=reason)
                     attempts += 1
                 else:
