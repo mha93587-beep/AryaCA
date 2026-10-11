@@ -61,8 +61,14 @@
     }
 
     .page-container {
+      height: 294mm;
+      max-height: 294mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
       page-break-after: always;
       break-after: page;
+      overflow: hidden;
     }
 
     .page-container:last-child {
@@ -76,7 +82,7 @@
       background-color: #00274c;
       border-bottom: 2.5px solid #dc2626;
       border-collapse: collapse;
-      margin-bottom: 1.5px;
+      flex-shrink: 0;
     }
 
     .header-cell {
@@ -115,29 +121,37 @@
     }
 
     /* 2-COLUMN MAIN LAYOUT */
-    .columns-table {
-      width: 100%;
-      border-collapse: collapse;
+    .columns-container {
+      flex: 1;
+      display: flex;
+      flex-direction: row;
+      gap: 8px;
+      margin: 1.5px 0;
+      min-height: 0;
+    }
+
+    .col-left, .col-right {
+      flex: 1;
+      width: 50%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 0;
     }
 
     .col-left {
-      width: 49.5%;
-      vertical-align: top;
       padding-right: 4px;
       border-right: 1.2px solid #cbd5e1;
     }
 
     .col-right {
-      width: 49.5%;
-      vertical-align: top;
       padding-left: 4px;
     }
 
     /* QUESTION CARD */
     .q-card {
-      padding: 1px 0 1.5px 0;
+      padding: 1.5px 0;
       border-bottom: 1px dashed #e2e8f0;
-      page-break-inside: avoid;
     }
 
     .q-card:last-child {
@@ -223,10 +237,10 @@
       margin-right: 2px;
     }
 
-    /* LARGE, CLEAR HD IMAGE (100px x 62px) */
+    /* LARGE, CLEAR HD IMAGE (100px x 60px) */
     .q-img {
       width: 100px;
-      height: 62px;
+      height: 60px;
       object-fit: cover;
       border-radius: 4px;
       border: 1px solid #94a3b8;
@@ -280,7 +294,8 @@
       background: #00274c;
       border-top: 2px solid #f97316;
       border-collapse: collapse;
-      margin-top: 1.5px;
+      flex-shrink: 0;
+      margin-top: 0;
     }
 
     .footer-cell {
@@ -345,105 +360,103 @@
     </table>
 
     <!-- 2-COLUMN MAIN BODY -->
-    <table class="columns-table">
-      <tr>
-        <!-- LEFT COLUMN: ODD QUESTIONS ON THIS PAGE -->
-        <td class="col-left">
-          {% for q in page.questions %}
-          {% if q.num % 2 != 0 %}
-          <div class="q-card">
-            <table class="q-head-table">
-              <tr>
-                <td class="q-badge-cell">
-                  <span class="q-badge">{{ q.num }}</span>
-                </td>
-                <td>
-                  <div class="q-stem-hi">{{ q.question_hi }}</div>
-                  <div class="q-stem-en">({{ q.question_en }})</div>
-                </td>
-              </tr>
-            </table>
+    <div class="columns-container">
+      <!-- LEFT COLUMN: ODD QUESTIONS ON THIS PAGE -->
+      <div class="col-left">
+        {% for q in page.questions %}
+        {% if q.num % 2 != 0 %}
+        <div class="q-card">
+          <table class="q-head-table">
+            <tr>
+              <td class="q-badge-cell">
+                <span class="q-badge">{{ q.num }}</span>
+              </td>
+              <td>
+                <div class="q-stem-hi">{{ q.question_hi }}</div>
+                <div class="q-stem-en">({{ q.question_en }})</div>
+              </td>
+            </tr>
+          </table>
 
-            <table class="q-body-table">
-              <tr>
-                <td class="opts-cell">
-                  {% for opt in q.options %}
-                  <div class="opt-row">
-                    <span class="opt-key">{{ opt.key }}</span>
-                    <span>{{ opt.val }}</span>
-                  </div>
-                  {% endfor %}
-                </td>
-                <td class="img-cell">
-                  {% if q.image_data_uri %}
-                  <img src="{{ q.image_data_uri }}" class="q-img" alt="Topic Photo" />
-                  {% endif %}
-                  <div style="text-align: right;">
-                    <span class="ans-box">Ans {{ q.correct_ans }}</span>
-                  </div>
-                </td>
-              </tr>
-            </table>
+          <table class="q-body-table">
+            <tr>
+              <td class="opts-cell">
+                {% for opt in q.options %}
+                <div class="opt-row">
+                  <span class="opt-key">{{ opt.key }}</span>
+                  <span>{{ opt.val }}</span>
+                </div>
+                {% endfor %}
+              </td>
+              <td class="img-cell">
+                {% if q.image_data_uri %}
+                <img src="{{ q.image_data_uri }}" class="q-img" alt="Topic Photo" />
+                {% endif %}
+                <div style="text-align: right;">
+                  <span class="ans-box">Ans {{ q.correct_ans }}</span>
+                </div>
+              </td>
+            </tr>
+          </table>
 
-            <div class="fact-box">
-              <span class="fact-tag">Exam Fact</span>
-              <div class="fact-bullet">• {{ q.exam_fact_hi }}</div>
-              <div class="fact-bullet" style="color: #475569;">• {{ q.exam_fact_en }}</div>
-            </div>
+          <div class="fact-box">
+            <span class="fact-tag">Exam Fact</span>
+            <div class="fact-bullet">• {{ q.exam_fact_hi }}</div>
+            <div class="fact-bullet" style="color: #475569;">• {{ q.exam_fact_en }}</div>
           </div>
-          {% endif %}
-          {% endfor %}
-        </td>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
 
-        <!-- RIGHT COLUMN: EVEN QUESTIONS ON THIS PAGE -->
-        <td class="col-right">
-          {% for q in page.questions %}
-          {% if q.num % 2 == 0 %}
-          <div class="q-card">
-            <table class="q-head-table">
-              <tr>
-                <td class="q-badge-cell">
-                  <span class="q-badge">{{ q.num }}</span>
-                </td>
-                <td>
-                  <div class="q-stem-hi">{{ q.question_hi }}</div>
-                  <div class="q-stem-en">({{ q.question_en }})</div>
-                </td>
-              </tr>
-            </table>
+      <!-- RIGHT COLUMN: EVEN QUESTIONS ON THIS PAGE -->
+      <div class="col-right">
+        {% for q in page.questions %}
+        {% if q.num % 2 == 0 %}
+        <div class="q-card">
+          <table class="q-head-table">
+            <tr>
+              <td class="q-badge-cell">
+                <span class="q-badge">{{ q.num }}</span>
+              </td>
+              <td>
+                <div class="q-stem-hi">{{ q.question_hi }}</div>
+                <div class="q-stem-en">({{ q.question_en }})</div>
+              </td>
+            </tr>
+          </table>
 
-            <table class="q-body-table">
-              <tr>
-                <td class="opts-cell">
-                  {% for opt in q.options %}
-                  <div class="opt-row">
-                    <span class="opt-key">{{ opt.key }}</span>
-                    <span>{{ opt.val }}</span>
-                  </div>
-                  {% endfor %}
-                </td>
-                <td class="img-cell">
-                  {% if q.image_data_uri %}
-                  <img src="{{ q.image_data_uri }}" class="q-img" alt="Topic Photo" />
-                  {% endif %}
-                  <div style="text-align: right;">
-                    <span class="ans-box">Ans {{ q.correct_ans }}</span>
-                  </div>
-                </td>
-              </tr>
-            </table>
+          <table class="q-body-table">
+            <tr>
+              <td class="opts-cell">
+                {% for opt in q.options %}
+                <div class="opt-row">
+                  <span class="opt-key">{{ opt.key }}</span>
+                  <span>{{ opt.val }}</span>
+                </div>
+                {% endfor %}
+              </td>
+              <td class="img-cell">
+                {% if q.image_data_uri %}
+                <img src="{{ q.image_data_uri }}" class="q-img" alt="Topic Photo" />
+                {% endif %}
+                <div style="text-align: right;">
+                  <span class="ans-box">Ans {{ q.correct_ans }}</span>
+                </div>
+              </td>
+            </tr>
+          </table>
 
-            <div class="fact-box">
-              <span class="fact-tag">Exam Fact</span>
-              <div class="fact-bullet">• {{ q.exam_fact_hi }}</div>
-              <div class="fact-bullet" style="color: #475569;">• {{ q.exam_fact_en }}</div>
-            </div>
+          <div class="fact-box">
+            <span class="fact-tag">Exam Fact</span>
+            <div class="fact-bullet">• {{ q.exam_fact_hi }}</div>
+            <div class="fact-bullet" style="color: #475569;">• {{ q.exam_fact_en }}</div>
           </div>
-          {% endif %}
-          {% endfor %}
-        </td>
-      </tr>
-    </table>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
 
     <!-- FOOTER -->
     <table class="footer-table">
