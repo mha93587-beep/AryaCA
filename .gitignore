@@ -5,6 +5,7 @@
 .env.development
 *.env
 secrets.json
+cron_job_curl.txt
 !.env.example
 
 # Generated Outputs & Assets
