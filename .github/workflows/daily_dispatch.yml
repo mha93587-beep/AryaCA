@@ -1,9 +1,9 @@
-name: AryaCA Daily Current Affairs Automated Dispatch (6:15 AM IST)
+name: AryaCA Daily Current Affairs Automated Dispatch (6:45 AM IST)
 
-# 00:45 UTC = 06:15 AM IST
+# 01:15 UTC = 06:45 AM IST
 on:
   schedule:
-    - cron: '45 0 * * *'
+    - cron: '15 1 * * *'
   workflow_dispatch:
     inputs:
       question_count:
