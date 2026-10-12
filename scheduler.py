@@ -18,6 +18,7 @@ from image_manager import ImageManager
 from pdf_generator import PDFGenerator
 from telegram_broadcaster import TelegramBroadcaster
 from brand_manager import BrandManager, BrandConfig
+from creator_card_generator import CreatorCardGenerator
 
 from typing import Optional, Tuple, List
 
@@ -130,6 +131,8 @@ def run_pipeline(date_str: str,
         for b in target_brands:
             s_num, s_time = resolve_shift_and_time(brand_id=b.brand_id, date_str=date_str, manual_shift=shift)
             print(f"[{b.name}] Pipeline Dry-Run Complete for Date: {date_str}, Shift: {s_num} ({s_time}). Target Channels: {b.get_effective_chat_ids()}")
+            if b.has_creator_channel():
+                print(f"[{b.name}] Creator Pack Dry-Run: 16:9 Cards Pack will be dispatched to Creator Channels: {b.get_effective_creator_chat_ids()}")
         return 0
 
     # Step 1: Engine Initialization
@@ -189,6 +192,39 @@ def run_pipeline(date_str: str,
                 logger.error(f"❌ Telegram broadcast error for [{b.name}]: {e}")
         else:
             logger.info(f"⏭️ Telegram broadcast skipped for [{b.name}] (--no-telegram flag).")
+
+        # Step 6: If brand has creator channels configured, generate & broadcast 16:9 Creator Edition
+        if b.has_creator_channel():
+            logger.info(f"6️⃣ Compiling 16:9 Creator Edition Cards Pack for [{b.name}] (Shift {shift_num})...")
+            try:
+                creator_gen = CreatorCardGenerator()
+                creator_zip_path, creator_preview_png = creator_gen.generate_creator_pack(
+                    date_str=date_str,
+                    questions=questions,
+                    brand_id_or_config=b,
+                    shift=shift_num,
+                    output_dir="outputs"
+                )
+                logger.info(f"✅ [{b.name}] Creator Pack ZIP: {creator_zip_path}")
+                logger.info(f"✅ [{b.name}] Creator Preview PNG: {creator_preview_png}")
+
+                if not skip_telegram and broadcaster:
+                    creator_channels = b.get_effective_creator_chat_ids()
+                    logger.info(f"📢 Broadcasting [{b.name}] Creator Pack to: {creator_channels}...")
+                    c_results = broadcaster.broadcast_creator_pack(
+                        brand_id=b.brand_id,
+                        zip_path=creator_zip_path,
+                        preview_png_path=creator_preview_png,
+                        date_str=date_str,
+                        shift_num=shift_num,
+                        time_str_ist=time_str_ist,
+                        count=len(questions)
+                    )
+                    logger.info(f"🎬 [{b.name}] Creator Pack Delivery Report: {c_results}")
+                else:
+                    logger.info(f"⏭️ Creator Pack broadcast skipped for [{b.name}] (--no-telegram flag).")
+            except Exception as e:
+                logger.error(f"❌ Error generating/broadcasting Creator Pack for [{b.name}]: {e}", exc_info=True)
 
     logger.info("=" * 60)
     logger.info("🎉 Current Affairs Daily Pipeline Finished Successfully!")

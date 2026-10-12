@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ brand_name }} Creator Cards - {{ edition_date_hi }}</title>
+  <style>
+    @font-face {
+      font-family: 'Noto Serif Devanagari';
+      src: url('../fonts/NotoSerifDevanagari-Regular.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'Noto Serif Devanagari';
+      src: url('../fonts/NotoSerifDevanagari-Bold.ttf') format('truetype');
+      font-weight: bold;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'Noto Sans';
+      src: url('../fonts/NotoSans-Bold.ttf') format('truetype');
+      font-weight: bold;
+      font-style: normal;
+    }
+
+    /* 16:9 Widescreen Full HD Page (192mm x 108mm -> 1920x1080 at 254 DPI) */
+    @page {
+      size: 192mm 108mm;
+      margin: 0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Noto Serif Devanagari', 'Noto Sans Devanagari', 'Noto Serif', serif;
+      background-color: #ffffff;
+      color: #0f172a;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .slide {
+      width: 192mm;
+      height: 108mm;
+      page-break-after: always;
+      position: relative;
+      overflow: hidden;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .slide:last-child {
+      page-break-after: avoid;
+    }
+
+    /* HEADER */
+    .slide-header {
+      width: 100%;
+      height: 11mm;
+      background: #00274c;
+      border-bottom: 2.2px solid #f97316;
+      padding: 1.5mm 6mm;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .header-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .header-left {
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    .header-right {
+      text-align: right;
+      vertical-align: middle;
+    }
+
+    .brand-logo-container {
+      background: #ffffff;
+      padding: 1.5px 7px;
+      border-radius: 4px;
+      display: inline-block;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+    }
+
+    .brand-logo-img {
+      height: 6.5mm;
+      max-width: 42mm;
+      object-fit: contain;
+      display: block;
+    }
+
+    .brand-text-title {
+      font-size: 15px;
+      font-weight: 900;
+      color: #ffffff;
+      letter-spacing: 0.5px;
+    }
+
+    .brand-orange { color: #f97316; }
+    .brand-gold { color: #facc15; }
+
+    .badge-pill {
+      background: #f97316;
+      color: #ffffff;
+      font-family: 'Noto Sans', sans-serif;
+      font-size: 8.5px;
+      font-weight: 800;
+      padding: 1.5px 6.5px;
+      border-radius: 10px;
+      display: inline-block;
+      margin-left: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .date-text {
+      color: #f8fafc;
+      font-size: 8.5px;
+      font-weight: 700;
+    }
+
+    /* CONTENT WRAPPER: TWO COLUMNS FOR 16:9 WIDESCREEN */
+    .content-table {
+      width: 100%;
+      height: 89mm;
+      border-collapse: collapse;
+      position: relative;
+      z-index: 2;
+    }
+
+    .col-question {
+      width: 63%;
+      vertical-align: top;
+      padding: 3.5mm 4mm 2mm 6mm;
+    }
+
+    .col-media {
+      width: 37%;
+      vertical-align: top;
+      padding: 3.5mm 6mm 2mm 3mm;
+      border-left: 1.2px dashed #e2e8f0;
+    }
+
+    /* WATERMARK OVERLAY */
+    .watermark-overlay {
+      position: absolute;
+      top: 52%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 110mm;
+      text-align: center;
+      opacity: 0.08;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .watermark-overlay img {
+      max-width: 100mm;
+      max-height: 32mm;
+      object-fit: contain;
+      filter: grayscale(100%);
+    }
+
+    .watermark-text {
+      font-family: 'Noto Sans', sans-serif;
+      font-size: 42px;
+      font-weight: 900;
+      color: #0f172a;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    /* QUESTION HEAD */
+    .q-head-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 2.5mm;
+    }
+
+    .q-badge-cell {
+      width: 7.5mm;
+      vertical-align: top;
+      padding-right: 2.2mm;
+    }
+
+    .q-badge {
+      width: 6.8mm;
+      height: 6.8mm;
+      background: #00274c;
+      color: #ffffff;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 6.8mm;
+      font-size: 11px;
+      font-weight: 900;
+      display: inline-block;
+      box-shadow: 0 1px 3px rgba(0,39,76,0.3);
+    }
+
+    .q-stem-hi {
+      color: #991b1b;
+      font-size: 12.6px;
+      font-weight: 800;
+      line-height: 1.34;
+      margin-bottom: 1.2px;
+    }
+
+    .q-stem-en {
+      color: #1d4ed8;
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    /* OPTIONS */
+    .options-container {
+      margin-bottom: 2.5mm;
+      padding-left: 1mm;
+    }
+
+    .opt-row {
+      margin-bottom: 1.8mm;
+      line-height: 1.25;
+      font-size: 10.6px;
+      color: #1e293b;
+    }
+
+    .opt-key {
+      display: inline-block;
+      width: 4.8mm;
+      height: 4.8mm;
+      background: #f97316;
+      color: #ffffff;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 4.8mm;
+      font-size: 9px;
+      font-weight: 800;
+      margin-right: 1.8mm;
+      vertical-align: middle;
+    }
+
+    /* EXAM FACT BOX */
+    .fact-box {
+      background: #f0f9ff;
+      border-left: 2.8px solid #0284c7;
+      border-radius: 3px;
+      padding: 1.8mm 3mm;
+      margin-top: 1mm;
+      box-shadow: 0 1px 2px rgba(2,132,199,0.06);
+    }
+
+    .fact-tag {
+      background: #0284c7;
+      color: #ffffff;
+      font-family: 'Noto Sans', sans-serif;
+      font-size: 8px;
+      font-weight: 800;
+      padding: 1px 4.5px;
+      border-radius: 2px;
+      display: inline-block;
+      margin-bottom: 1px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .fact-bullet {
+      font-size: 9.8px;
+      line-height: 1.25;
+      color: #0f172a;
+      margin-bottom: 1px;
+    }
+
+    /* RIGHT COLUMN: HD TOPIC PHOTO & DIGITAL BOARD WORKSPACE */
+    .q-img-large {
+      width: 100%;
+      height: 38mm;
+      object-fit: cover;
+      border-radius: 4px;
+      border: 1.2px solid #cbd5e1;
+      display: block;
+      margin-bottom: 2.5mm;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    }
+
+    .whiteboard-box {
+      width: 100%;
+      height: 41mm;
+      border: 1px dashed #cbd5e1;
+      border-radius: 4px;
+      background: #fafafa;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .whiteboard-box-full {
+      width: 100%;
+      height: 82mm;
+      border: 1px dashed #cbd5e1;
+      border-radius: 4px;
+      background: #fafafa;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .whiteboard-hint {
+      font-family: 'Noto Sans', sans-serif;
+      font-size: 8px;
+      font-weight: 700;
+      color: #94a3b8;
+      letter-spacing: 0.8px;
+      text-align: center;
+    }
+
+    /* FOOTER */
+    .slide-footer {
+      width: 100%;
+      height: 8mm;
+      background: #00274c;
+      border-top: 1.8px solid #f97316;
+      padding: 0 6mm;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-sizing: border-box;
+      flex-shrink: 0;
+    }
+
+    .footer-table {
+      width: 100%;
+      height: 100%;
+      border-collapse: collapse;
+    }
+
+    .footer-cell-left {
+      text-align: left;
+      vertical-align: middle;
+      color: #f8fafc;
+      font-size: 8px;
+      font-weight: 700;
+    }
+
+    .footer-cell-right {
+      text-align: right;
+      vertical-align: middle;
+      color: #facc15;
+      font-size: 8px;
+      font-weight: 800;
+    }
+
+    .footer-link {
+      color: #38bdf8;
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+    /* ANSWER KEY 16:9 WIDESCREEN STYLES */
+    .answer-key-wrapper {
+      padding: 3mm 6mm;
+      height: 89mm;
+      position: relative;
+      z-index: 2;
+    }
+
+    .ak-title {
+      font-size: 14.5px;
+      font-weight: 900;
+      color: #00274c;
+      text-align: center;
+      margin-bottom: 0.8mm;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .ak-subtitle {
+      font-size: 9px;
+      color: #64748b;
+      text-align: center;
+      margin-bottom: 2.5mm;
+      font-weight: 700;
+    }
+
+    .ak-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .ak-table th {
+      background: #00274c;
+      color: #ffffff;
+      font-size: 8.5px;
+      font-weight: 800;
+      padding: 1.5mm 1mm;
+      text-align: center;
+      border: 1px solid #00274c;
+    }
+
+    .ak-table td {
+      border: 1px solid #cbd5e1;
+      padding: 1.2mm 1mm;
+      text-align: center;
+      font-size: 9px;
+    }
+
+    .ak-row-even {
+      background: #f8fafc;
+    }
+
+    .ak-opt {
+      background: #f97316;
+      color: #ffffff;
+      font-weight: 900;
+      display: inline-block;
+      width: 4.8mm;
+      height: 4.8mm;
+      line-height: 4.8mm;
+      border-radius: 50%;
+      text-align: center;
+      font-size: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- QUESTION CARDS (1 SLIDE PER QUESTION IN 16:9 FULL HD WIDESCREEN) -->
+  {% for q in questions %}
+  <div class="slide">
+    <!-- TOP HEADER -->
+    <div class="slide-header">
+      <table class="header-table">
+        <tr>
+          <td class="header-left">
+            {% if brand_logo_data_uri %}
+            <div class="brand-logo-container">
+              <img src="{{ brand_logo_data_uri }}" class="brand-logo-img" alt="{{ brand_name }}" />
+            </div>
+            {% elif brand_title_html %}
+            {{ brand_title_html | safe }}
+            {% else %}
+            <span class="brand-text-title">{{ brand_name }}</span>
+            {% endif %}
+          </td>
+          <td class="header-right">
+            <span class="date-text">{{ edition_date_en }}</span>
+            <span class="badge-pill">Shift {{ shift }}</span>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- WATERMARK OVERLAY -->
+    <div class="watermark-overlay">
+      {% if brand_logo_data_uri %}
+      <img src="{{ brand_logo_data_uri }}" alt="Watermark" />
+      {% else %}
+      <div class="watermark-text">{{ brand_name }}</div>
+      {% endif %}
+    </div>
+
+    <!-- MAIN TWO-COLUMN CONTENT (16:9 Widescreen) -->
+    <table class="content-table">
+      <tr>
+        <!-- LEFT: QUESTION STEM, OPTIONS & EXAM FACT -->
+        <td class="col-question">
+          <table class="q-head-table">
+            <tr>
+              <td class="q-badge-cell">
+                <span class="q-badge">{{ q.num }}</span>
+              </td>
+              <td>
+                <div class="q-stem-hi">{{ q.question_hi }}</div>
+                <div class="q-stem-en">({{ q.question_en }})</div>
+              </td>
+            </tr>
+          </table>
+
+          <div class="options-container">
+            {% for opt in q.options %}
+            <div class="opt-row">
+              <span class="opt-key">{{ opt.key }}</span>
+              <span>{{ opt.val }}</span>
+            </div>
+            {% endfor %}
+          </div>
+
+          <div class="fact-box">
+            <span class="fact-tag">Exam Fact</span>
+            <div class="fact-bullet">• {{ q.exam_fact_hi }}</div>
+            <div class="fact-bullet" style="color: #475569;">• {{ q.exam_fact_en }}</div>
+          </div>
+        </td>
+
+        <!-- RIGHT: HD TOPIC PHOTO & DIGITAL BOARD WORKSPACE -->
+        <td class="col-media">
+          {% if q.image_data_uri %}
+          <img src="{{ q.image_data_uri }}" class="q-img-large" alt="Topic Photo" />
+          <div class="whiteboard-box">
+            <div class="whiteboard-hint">DIGITAL BOARD WORKSPACE</div>
+          </div>
+          {% else %}
+          <div class="whiteboard-box-full">
+            <div class="whiteboard-hint">DIGITAL BOARD WORKSPACE</div>
+          </div>
+          {% endif %}
+        </td>
+      </tr>
+    </table>
+
+    <!-- BOTTOM FOOTER -->
+    <div class="slide-footer">
+      <table class="footer-table">
+        <tr>
+          <td class="footer-cell-left">
+            <span>Creator Hub: </span>
+            <a href="{{ creator_channel_url or channel_url }}" class="footer-link">{{ creator_channel_handle or channel_handle }}</a>
+          </td>
+          <td class="footer-cell-right">
+            <span>16:9 Full HD YouTube Teaching Slide</span>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
+  {% endfor %}
+
+  <!-- FINAL SLIDE: COMPLETE ANSWER KEY IN 16:9 WIDESCREEN -->
+  <div class="slide">
+    <div class="slide-header">
+      <table class="header-table">
+        <tr>
+          <td class="header-left">
+            {% if brand_logo_data_uri %}
+            <div class="brand-logo-container">
+              <img src="{{ brand_logo_data_uri }}" class="brand-logo-img" alt="{{ brand_name }}" />
+            </div>
+            {% else %}
+            <span class="brand-text-title">{{ brand_name }}</span>
+            {% endif %}
+          </td>
+          <td class="header-right">
+            <span class="date-text">{{ edition_date_en }}</span>
+            <span class="badge-pill">Shift {{ shift }}</span>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="watermark-overlay">
+      {% if brand_logo_data_uri %}
+      <img src="{{ brand_logo_data_uri }}" alt="Watermark" />
+      {% else %}
+      <div class="watermark-text">{{ brand_name }}</div>
+      {% endif %}
+    </div>
+
+    <div class="answer-key-wrapper">
+      <div class="ak-title">Official Answer Key</div>
+      <div class="ak-subtitle">{{ edition_date_hi }} • Total Questions: {{ questions|length }} • Shift {{ shift }}</div>
+
+      <!-- 5 COLUMNS GRID (10 ROWS x 5 COLS FOR 50 QUESTIONS) -->
+      <table class="ak-table">
+        <thead>
+          <tr>
+            <th>Q#</th><th>Ans</th>
+            <th>Q#</th><th>Ans</th>
+            <th>Q#</th><th>Ans</th>
+            <th>Q#</th><th>Ans</th>
+            <th>Q#</th><th>Ans</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set rows_count = ((questions|length + 4) // 5) %}
+          {% for r in range(rows_count) %}
+          <tr class="{{ 'ak-row-even' if r % 2 == 0 else '' }}">
+            {% for c in range(5) %}
+              {% set idx = r + c * rows_count %}
+              {% if idx < questions|length %}
+                {% set item = questions[idx] %}
+                <td style="font-weight: 800; color: #00274c;">Q{{ item.num }}</td>
+                <td><span class="ak-opt">{{ item.correct_ans }}</span></td>
+              {% else %}
+                <td style="color: #cbd5e1;">-</td>
+                <td style="color: #cbd5e1;">-</td>
+              {% endif %}
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <div style="margin-top: 4mm; text-align: center; color: #64748b; font-size: 8px; font-weight: 700;">
+        YouTube & Digital Board Teaching Pack • Confidential Key for Educators
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <table class="footer-table">
+        <tr>
+          <td class="footer-cell-left">
+            <span>Creator Hub: </span>
+            <a href="{{ creator_channel_url or channel_url }}" class="footer-link">{{ creator_channel_handle or channel_handle }}</a>
+          </td>
+          <td class="footer-cell-right">
+            <span>16:9 Full HD Answer Key</span>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+</body>
+</html>

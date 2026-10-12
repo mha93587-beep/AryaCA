@@ -117,3 +117,91 @@ class TelegramBroadcaster:
             results[channel] = channel_success
 
         return results
+
+    def broadcast_creator_pack(
+        self,
+        brand_id: Optional[str],
+        zip_path: str,
+        preview_png_path: Optional[str] = None,
+        date_str: str = "",
+        shift_num: Optional[int] = None,
+        time_str_ist: Optional[str] = None,
+        count: int = 50
+    ) -> Dict[str, bool]:
+        """
+        Broadcasts the 9:16 Creator Edition ZIP pack and sample card to brand creator channels.
+        """
+        brand = BrandManager.get_brand(brand_id or "affairs_index")
+        if not brand:
+            logger.error(f"❌ Unknown brand '{brand_id}' for creator broadcast.")
+            return {}
+
+        target_channels = brand.get_effective_creator_chat_ids()
+        if not target_channels:
+            logger.info(f"ℹ️ Brand [{brand.name}] has no creator channels configured. Skipping creator broadcast.")
+            return {}
+
+        logger.info(f"🎬 Broadcasting [{brand.name}] Creator Pack to {len(target_channels)} channels: {target_channels}")
+        results = {}
+
+        shift_tag = f" • शिफ्ट {shift_num}" if shift_num else ""
+        time_tag = f" • {time_str_ist}" if time_str_ist else ""
+        creator_url = brand.get_effective_creator_channel_url() or brand.get_effective_channel_url()
+        creator_handle = brand.get_effective_creator_channel_handle() or brand.get_effective_channel_handle()
+
+        caption_header = (
+            f"🎬 <b>{brand.name} — Creator Edition (Teaching Cards Pack)</b>\n"
+            f"📅 <b>{date_str}</b>{shift_tag}{time_tag}\n\n"
+            f"🎯 <b>{count} Full HD (9:16) Cards + Answer Key</b>\n"
+            f"✨ YouTube, Digital Board & Touchscreen Teaching के लिए तैयार\n"
+            f"👉 Join Creator Hub: <a href=\"{creator_url}\">{creator_handle}</a>"
+        )
+
+        for channel in target_channels:
+            channel_success = False
+            try:
+                # 1. Send Preview Card Photo
+                if preview_png_path and os.path.exists(preview_png_path):
+                    photo_url = f"https://api.telegram.org/bot{self.bot_token}/sendPhoto"
+                    with open(preview_png_path, "rb") as f:
+                        resp = requests.post(
+                            photo_url,
+                            data={"chat_id": channel, "caption": caption_header, "parse_mode": "HTML"},
+                            files={"photo": f},
+                            timeout=25
+                        )
+                        if resp.status_code == 200:
+                            logger.info(f"✅ Creator preview photo sent to {channel}")
+                        else:
+                            logger.warning(f"⚠️ Creator photo send failed for {channel}: {resp.status_code} - {resp.text}")
+
+                time.sleep(1.0)
+
+                # 2. Send ZIP Archive
+                if os.path.exists(zip_path):
+                    doc_url = f"https://api.telegram.org/bot{self.bot_token}/sendDocument"
+                    zip_caption = (
+                        f"📦 <b>{brand.name} Creator Pack (.zip)</b>\n"
+                        f"Includes {count} Individual Question Images + Complete Answer Key."
+                    )
+                    with open(zip_path, "rb") as f:
+                        resp = requests.post(
+                            doc_url,
+                            data={"chat_id": channel, "caption": zip_caption, "parse_mode": "HTML"},
+                            files={"document": (os.path.basename(zip_path), f, "application/zip")},
+                            timeout=60
+                        )
+                        if resp.status_code == 200:
+                            logger.info(f"✅ Creator ZIP pack sent to {channel}")
+                            channel_success = True
+                        else:
+                            logger.warning(f"⚠️ Creator ZIP send failed for {channel}: {resp.status_code} - {resp.text}")
+                else:
+                    logger.error(f"Creator ZIP file not found: {zip_path}")
+
+            except Exception as e:
+                logger.error(f"❌ Exception broadcasting creator pack to {channel}: {e}")
+
+            results[channel] = channel_success
+
+        return results

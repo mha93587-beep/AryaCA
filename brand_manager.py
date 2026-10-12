@@ -18,6 +18,10 @@ class BrandConfig:
     logo_filename: Optional[str] = None
     file_prefix: str = ""
     brand_title_html: Optional[str] = None
+    creator_chat_ids_env: Optional[str] = None
+    default_creator_chat_ids: List[str] = field(default_factory=list)
+    creator_channel_url: Optional[str] = None
+    creator_channel_handle: Optional[str] = None
 
     def get_effective_channel_url(self) -> str:
         env_key = f"{self.brand_id.upper()}_CHANNEL_URL"
@@ -26,6 +30,33 @@ class BrandConfig:
     def get_effective_channel_handle(self) -> str:
         env_key = f"{self.brand_id.upper()}_CHANNEL_HANDLE"
         return os.getenv(env_key) or self.channel_handle
+
+    def get_effective_creator_channel_url(self) -> Optional[str]:
+        env_key = f"{self.brand_id.upper()}_CREATOR_CHANNEL_URL"
+        return os.getenv(env_key) or self.creator_channel_url
+
+    def get_effective_creator_channel_handle(self) -> Optional[str]:
+        env_key = f"{self.brand_id.upper()}_CREATOR_CHANNEL_HANDLE"
+        return os.getenv(env_key) or self.creator_channel_handle
+
+    def get_effective_creator_chat_ids(self) -> List[str]:
+        if not self.creator_chat_ids_env:
+            return self.default_creator_chat_ids
+
+        # 1. Check plural env var e.g. AFFAIRS_INDEX_CREATOR_CHAT_IDS
+        raw_plural = os.getenv(self.creator_chat_ids_env, "")
+        # 2. Check singular env var e.g. AFFAIRS_INDEX_CREATOR_CHAT_ID
+        singular_env = self.creator_chat_ids_env.rstrip("S")
+        raw_singular = os.getenv(singular_env, "")
+
+        raw = raw_plural or raw_singular
+        if raw:
+            return [c.strip() for c in raw.split(",") if c.strip()]
+
+        return self.default_creator_chat_ids
+
+    def has_creator_channel(self) -> bool:
+        return bool(self.get_effective_creator_chat_ids())
 
     def get_effective_chat_ids(self) -> List[str]:
         # 1. Check plural env var e.g. AFFAIRS_INDEX_CHANNEL_CHAT_IDS
@@ -81,7 +112,11 @@ class BrandManager:
             default_chat_ids=["-1004404688481"],
             logo_filename="affairs_index_logo.png",
             file_prefix="AffairsIndex",
-            brand_title_html=None
+            brand_title_html=None,
+            creator_chat_ids_env="AFFAIRS_INDEX_CREATOR_CHAT_IDS",
+            default_creator_chat_ids=["-1003908320190"],
+            creator_channel_url="https://t.me/AffairsIndexcreator",
+            creator_channel_handle="@AffairsIndexcreator"
         ),
         "aryaca": BrandConfig(
             brand_id="aryaca",
@@ -92,7 +127,11 @@ class BrandManager:
             default_chat_ids=["-1004481930815", "-1004361971529"],
             logo_filename=None,
             file_prefix="AryaCA",
-            brand_title_html='<span class="brand-title"><span class="brand-orange">Arya</span><span class="brand-gold">CA</span></span>'
+            brand_title_html='<span class="brand-title"><span class="brand-orange">Arya</span><span class="brand-gold">CA</span></span>',
+            creator_chat_ids_env="ARYA_CREATOR_CHAT_IDS",
+            default_creator_chat_ids=[],
+            creator_channel_url=None,
+            creator_channel_handle=None
         )
     }
 

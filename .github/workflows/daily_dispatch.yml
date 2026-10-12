@@ -54,6 +54,8 @@ jobs:
       TG_CHANNEL_CHAT_IDS: ${{ secrets.TG_CHANNEL_CHAT_IDS }}
       ARYA_CHANNEL_CHAT_IDS: ${{ secrets.ARYA_CHANNEL_CHAT_IDS }}
       AFFAIRS_INDEX_CHANNEL_CHAT_IDS: ${{ secrets.AFFAIRS_INDEX_CHANNEL_CHAT_IDS }}
+      AFFAIRS_INDEX_CREATOR_CHAT_IDS: ${{ secrets.AFFAIRS_INDEX_CREATOR_CHAT_IDS }}
+      ARYA_CREATOR_CHAT_IDS: ${{ secrets.ARYA_CREATOR_CHAT_IDS }}
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
     steps:
@@ -110,4 +112,5 @@ jobs:
           path: |
             outputs/*.pdf
             outputs/*.png
+            outputs/*.zip
           retention-days: 7
