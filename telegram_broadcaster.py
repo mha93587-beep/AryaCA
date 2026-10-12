@@ -5,6 +5,8 @@ import requests
 from typing import List, Dict, Optional
 from dotenv import load_dotenv
 
+from brand_manager import BrandManager, BrandConfig
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 dotenv_path = os.path.join(BASE_DIR, ".env")
 if os.path.exists(dotenv_path):
@@ -129,7 +131,7 @@ class TelegramBroadcaster:
         count: int = 50
     ) -> Dict[str, bool]:
         """
-        Broadcasts the 9:16 Creator Edition ZIP pack and sample card to brand creator channels.
+        Broadcasts the 16:9 Creator Edition ZIP pack and sample card to brand creator channels.
         """
         brand = BrandManager.get_brand(brand_id or "affairs_index")
         if not brand:
@@ -152,7 +154,7 @@ class TelegramBroadcaster:
         caption_header = (
             f"🎬 <b>{brand.name} — Creator Edition (Teaching Cards Pack)</b>\n"
             f"📅 <b>{date_str}</b>{shift_tag}{time_tag}\n\n"
-            f"🎯 <b>{count} Full HD (9:16) Cards + Answer Key</b>\n"
+            f"🎯 <b>{count} Full HD (16:9) Cards + Answer Key</b>\n"
             f"✨ YouTube, Digital Board & Touchscreen Teaching के लिए तैयार\n"
             f"👉 Join Creator Hub: <a href=\"{creator_url}\">{creator_handle}</a>"
         )
