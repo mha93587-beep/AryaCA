@@ -13,6 +13,19 @@ from gemini_engine import GeminiRotationEngine
 logger = logging.getLogger("image_manager")
 logging.basicConfig(level=logging.INFO)
 
+# Domains that return watermarked stock graphics, entertainment posters, or video/music junk
+SPAM_DOMAINS = [
+    # Watermarked stock libraries that fail editorial verification
+    "alamy.com", "shutterstock", "gettyimages", "dreamstime", "istockphoto", "freepik",
+    "vecteezy", "oyorooms", "upsccolorfullnotes", "mapasmilhaud", "123rf", "depositphotos",
+    # Video and music platforms that return entertainment posters & album art
+    "youtube.com", "ytimg.com", "gaanacdn", "saavn", "spotify", "dailymotion", "vimeo",
+    # Social media dynamic thumbnail endpoints
+    "facebook.com", "lookaside.fbsbx", "instagram.com", "pinterest.com",
+    # Non-photographic extensions
+    ".svg", ".gif"
+]
+
 class ApifyRotationManager:
     """
     Thread-safe rotation engine for Apify Google Images API keys.
@@ -148,43 +161,82 @@ class ImageManager:
             "User-Agent": "AryaCABot/1.0 (https://t.me/AryaCAtg; bot@aryaca.org) Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
         })
 
-    def _dynamically_generate_queries_with_ai(self, question_hi: str, question_en: str, current_query: str) -> List[str]:
+    def _generate_adaptive_query_with_memory(
+        self,
+        question_hi: str,
+        question_en: str,
+        attempt_history: List[dict],
+        fallback_queries: Optional[List[str]] = None
+    ) -> Optional[str]:
         """
-        Dynamically asks Gemini AI to research and generate 3 to 5 new, hyper-targeted,
-        creative photographic search queries tailored to this specific question.
-        NO hardcoded keywords. Purely question-driven.
+        Dynamically asks Gemini AI to formulate an adaptive search query based on the memory
+        of previous failed attempts and Vision rejection reasons for this specific question.
+        Keeps prompt very compact (<80 tokens) to preserve free tier quota and prevent rate limits.
         """
         if not self.engine:
-            return []
+            if fallback_queries:
+                for fq in fallback_queries:
+                    if fq and not any(h.get("query", "").lower() == fq.lower() for h in attempt_history):
+                        return fq
+            return None
+
+        # Build short memory summary (last 2 attempts to keep context strictly minimal)
+        history_lines = []
+        for h in attempt_history[-2:]:
+            q_txt = h.get("query", "")
+            reason_txt = h.get("reason", "unrelated or rejected")
+            if len(reason_txt) > 80:
+                reason_txt = reason_txt[:80] + "..."
+            history_lines.append(f"- Searched '{q_txt}' -> Failed: {reason_txt}")
+
+        memory_summary = "\n".join(history_lines)
+        q_context = question_en or question_hi
+
         prompt = (
-            f"Question (Hindi): {question_hi}\n"
-            f"Question (English): {question_en}\n"
-            f"Failed Search Query: {current_query}\n\n"
-            "As an expert visual photo researcher, generate 4 creative, diverse, and high-impact English search queries to find an authentic, high-quality, professional photograph for this exam question.\n"
+            f"Question: {q_context}\n\n"
+            f"Previous failed search attempts:\n{memory_summary}\n\n"
+            "Problem: Keyword search engines (Bing/Yandex/Wikimedia) failed to find an exact match because the queries were too long, specific, or returned unrelated entertainment/stock photos.\n"
+            "Task: Formulate ONE new, concise search query (strictly 2 to 4 words) focusing on the official core entity name, leader, or physical landmark.\n"
             "Rules:\n"
-            "1. NEVER use generic numbers, percentages, or abstract policy acronyms that produce number charts or text slides.\n"
-            "2. Think visually and creatively:\n"
-            "   - Exact news event, ceremony, bilateral handshake, or press conference\n"
-            "   - Tangible real-world professional scene or field activity (e.g. modern farming, manufacturing, technology lab)\n"
-            "   - Architectural headquarters building, landmark, or leader official portrait\n"
-            "   - Premium symbolic context, judicial scales, emblem, or national seal\n\n"
-            "Return valid JSON array of strings: [\"query1\", \"query2\", \"query3\", \"query4\"]"
+            "1. Strictly 2 to 4 words.\n"
+            "2. Do NOT repeat previous failed queries.\n"
+            "3. Return ONLY valid JSON: {\"query\": \"...\"}"
         )
+
         try:
             res = self.engine.generate_text(
                 prompt=prompt,
-                system_instruction="You are a professional visual researcher for a premier publication. Output JSON array of strings.",
-                temperature=0.3
+                system_instruction="You are a professional visual photo researcher for competitive exams current affairs. Output JSON with a single 'query' field.",
+                temperature=0.2
             )
             raw = res.strip()
             if "```" in raw:
                 raw = re.sub(r'```(?:json)?', '', raw).strip()
             data = json.loads(raw)
-            if isinstance(data, list):
-                return [q.strip() for q in data if isinstance(q, str) and len(q.strip()) > 3]
+            if isinstance(data, dict) and data.get("query"):
+                gen_q = data["query"].strip()
+                if gen_q and not any(h.get("query", "").lower() == gen_q.lower() for h in attempt_history):
+                    return gen_q
         except Exception as e:
-            logger.warning(f"Dynamic AI visual research error: {e}")
-        return []
+            logger.debug(f"Adaptive query generation error: {e}")
+
+        # Fallback to unused alternative queries if LLM fails
+        if fallback_queries:
+            for fq in fallback_queries:
+                if fq and not any(h.get("query", "").lower() == fq.lower() for h in attempt_history):
+                    return fq
+        return None
+
+    def _dynamically_generate_queries_with_ai(self, question_hi: str, question_en: str, current_query: str) -> List[str]:
+        """
+        Backwards-compatible helper: generates adaptive queries for this question.
+        """
+        res = self._generate_adaptive_query_with_memory(
+            question_hi=question_hi,
+            question_en=question_en,
+            attempt_history=[{"query": current_query, "reason": "No relevant image found"}]
+        )
+        return [res] if res else []
 
     def get_verified_image(
         self,
@@ -194,34 +246,67 @@ class ImageManager:
         question_dict: Optional[dict] = None
     ) -> str:
         """
-        Fetches topic images using high-yield Bing Search + Yandex + Wikipedia + Wikimedia,
-        verifies relevance with Gemini Vision, and retries with alternative queries if rejected.
-        Always guarantees a real, high-quality, verified photograph is returned.
+        Fetches topic images using prioritized Wikimedia Commons + Yandex + Bing,
+        verifies relevance with Gemini Vision, and retries with adaptive memory if rejected.
+        Memory is strictly scoped to this single question session to conserve free tier quota.
         """
-        queries_to_try = [visual_query]
+        q_hi = (question_dict or {}).get("question_hi", "")
+        q_en = (question_dict or {}).get("question_en", "")
+
+        initial_pool = []
+        if visual_query and visual_query.strip():
+            initial_pool.append(visual_query.strip())
+
+        # If visual_query is long (>4 words), also add a crisp 2-3 word entity core query upfront
+        tokens = visual_query.split()
+        if len(tokens) > 4:
+            crisp_core = " ".join(tokens[:3]).strip()
+            if crisp_core and crisp_core not in initial_pool:
+                initial_pool.append(crisp_core)
+
         if alt_queries:
             for aq in alt_queries:
-                if aq and aq.strip() and aq not in queries_to_try:
-                    queries_to_try.append(aq.strip())
+                if aq and aq.strip() and aq.strip() not in initial_pool:
+                    initial_pool.append(aq.strip())
 
-        # Also add a 2-word core entity query as fallback
-        core_query = " ".join(visual_query.split()[:2]).strip()
-        if core_query and core_query not in queries_to_try:
-            queries_to_try.append(core_query)
+        attempt_history: List[dict] = []
+        max_attempts = 4
 
-        for q_idx, query in enumerate(queries_to_try):
-            logger.info(f"🔍 [Attempt {q_idx+1}/{len(queries_to_try)}] Searching real HD photo for: '{query}'...")
-            candidate_urls = self._search_candidate_urls(query)
+        for attempt_idx in range(max_attempts):
+            if attempt_idx == 0:
+                current_query = initial_pool[0]
+            elif attempt_idx == 1 and len(initial_pool) > 1:
+                current_query = initial_pool[1]
+            else:
+                logger.info(f"🧠 Asking AI for adaptive query using memory of {len(attempt_history)} failed attempt(s)...")
+                adaptive_q = self._generate_adaptive_query_with_memory(
+                    question_hi=q_hi,
+                    question_en=q_en,
+                    attempt_history=attempt_history,
+                    fallback_queries=initial_pool
+                )
+                if adaptive_q:
+                    current_query = adaptive_q
+                elif attempt_idx < len(initial_pool):
+                    current_query = initial_pool[attempt_idx]
+                else:
+                    break
+
+            logger.info(f"🔍 [Attempt {attempt_idx + 1}/{max_attempts}] Searching real HD photo for: '{current_query}'...")
+            candidate_urls = self._search_candidate_urls(current_query)
             if not candidate_urls:
+                attempt_history.append({"query": current_query, "reason": "No candidate URLs returned by search engines"})
                 continue
 
-            for url in candidate_urls[:6]:
+            last_rejection_reason = "No valid image found"
+
+            # Check up to 8 diverse candidates (Wikimedia Commons, Yandex, Bing)
+            for url in candidate_urls[:8]:
                 try:
                     resp = self.session.get(url, timeout=6)
                     if resp.status_code == 200 and len(resp.content) > 4000:
                         img_bytes = resp.content
 
-                        # Validate that it's a real valid image with decent dimensions
                         try:
                             with Image.open(io.BytesIO(img_bytes)) as test_img:
                                 w, h = test_img.size
@@ -230,65 +315,30 @@ class ImageManager:
                         except Exception:
                             continue
 
-                        # Verify with Gemini Vision (with key rotation & multi-attempt retries)
+                        # Verify with Gemini Vision
                         is_relevant, reason = self.engine.verify_image_relevance(
                             image_bytes=img_bytes,
                             question_text=question_context,
-                            visual_query=query
+                            visual_query=current_query
                         )
-                        logger.info(f"🤖 Vision check on '{query}': relevant={is_relevant} (reason: {reason})")
+                        logger.info(f"🤖 Vision check on '{current_query}': relevant={is_relevant} (reason: {reason})")
 
                         if is_relevant:
-                            logger.info(f"✅ Relevant HD photo verified for '{query}'!")
+                            logger.info(f"✅ Relevant HD photo verified for '{current_query}' on attempt {attempt_idx + 1}!")
                             return self._process_image_to_data_uri(img_bytes)
                         else:
+                            last_rejection_reason = reason
                             logger.info(f"⏭️ Candidate rejected by Vision ({reason}). Retrying next candidate...")
                 except Exception as e:
                     logger.warning(f"Error fetching/verifying image from {url}: {e}")
                     continue
 
-        # If all initial queries failed, dynamically ask AI to research fresh creative queries!
-        if self.engine and question_dict:
-            logger.info(f"🧠 Asking AI for dynamic secondary visual queries for '{visual_query}'...")
-            ai_queries = self._dynamically_generate_queries_with_ai(
-                question_hi=question_dict.get("question_hi", ""),
-                question_en=question_dict.get("question_en", ""),
-                current_query=visual_query
-            )
-            for ai_q in ai_queries:
-                if ai_q in queries_to_try:
-                    continue
-                logger.info(f"🔍 [Dynamic AI Query] Searching HD photo for: '{ai_q}'...")
-                candidate_urls = self._search_candidate_urls(ai_q)
-                for url in candidate_urls[:6]:
-                    try:
-                        resp = self.session.get(url, timeout=6)
-                        if resp.status_code == 200 and len(resp.content) > 4000:
-                            img_bytes = resp.content
-                            try:
-                                with Image.open(io.BytesIO(img_bytes)) as test_img:
-                                    w, h = test_img.size
-                                    if w < 100 or h < 100:
-                                        continue
-                            except Exception:
-                                continue
+            # Record failure in memory so next attempt can adapt
+            attempt_history.append({"query": current_query, "reason": last_rejection_reason})
+            logger.info(f"⚠️ Attempt {attempt_idx + 1} failed for '{current_query}'. Recorded reason in memory: '{last_rejection_reason}'")
 
-                            is_relevant, reason = self.engine.verify_image_relevance(
-                                image_bytes=img_bytes,
-                                question_text=question_context,
-                                visual_query=ai_q
-                            )
-                            logger.info(f"🤖 Vision check on dynamic query '{ai_q}': relevant={is_relevant} (reason: {reason})")
-                            if is_relevant:
-                                logger.info(f"✅ Relevant HD photo verified for '{ai_q}'!")
-                                return self._process_image_to_data_uri(img_bytes)
-                    except Exception as e:
-                        logger.warning(f"Error on dynamic candidate {url}: {e}")
-                        continue
-
-        # If strict vision rejected all candidate photos across all query attempts,
-        # generate a clean topic badge rather than embedding completely irrelevant garbage
-        logger.warning(f"⚠️ Could not verify relevant photo for '{visual_query}' across all retries. Generating fallback badge.")
+        # If all attempts exhausted, generate a clean topic badge
+        logger.warning(f"⚠️ Could not verify relevant photo for '{visual_query}' across {len(attempt_history)} attempts. Generating fallback badge.")
         return self._generate_fallback_badge(visual_query)
 
     def _search_wikipedia_thumbnail(self, query: str) -> Optional[str]:
@@ -334,45 +384,15 @@ class ImageManager:
         if hasattr(self, "apify") and self.apify.has_keys:
             try:
                 apify_urls = self.apify.search_google_images(cleaned_query, self.session)
-                for u in apify_urls[:10]:
+                for u in apify_urls[:8]:
                     if u not in urls:
                         urls.append(u)
             except Exception as e:
                 logger.warning(f"Apify Google Images search error: {e}")
 
-        # Source 3: High-Yield Bing Image Search (Fast, direct, real photographic news & event images)
-        try:
-            encoded = requests.utils.quote(cleaned_query)
-            bing_url = f"https://www.bing.com/images/search?q={encoded}&first=1&scenario=ImageBasicHover"
-            r = self.session.get(bing_url, timeout=5)
-            if r.status_code == 200:
-                matches = re.findall(r'murl&quot;:&quot;(http[^&]+)&quot;', r.text)
-                for u in matches[:12]:
-                    u_low = u.lower()
-                    if any(spam in u_low for spam in ["vecteezy", "oyorooms", "upsccolorfullnotes", "mapasmilhaud", ".svg", ".gif"]):
-                        continue
-                    if u.startswith("http") and u not in urls:
-                        urls.append(u)
-        except Exception as e:
-            logger.warning(f"Bing image search error: {e}")
-
-        # Source 4: High-Yield Yandex Images Search (Vast global and Indian news image index)
-        try:
-            yandex_url = f"https://yandex.com/images/search?text={requests.utils.quote(cleaned_query)}"
-            yr = self.session.get(yandex_url, timeout=5)
-            if yr.status_code == 200:
-                y_matches = re.findall(r'img_url=([^&]+)&', yr.text)
-                for ym in y_matches[:12]:
-                    decoded_u = requests.utils.unquote(ym)
-                    decoded_low = decoded_u.lower()
-                    if any(spam in decoded_low for spam in ["vecteezy", "oyorooms", "upsccolorfullnotes", "mapasmilhaud", ".svg", ".gif"]):
-                        continue
-                    if decoded_u.startswith("http") and decoded_u not in urls:
-                        urls.append(decoded_u)
-        except Exception as e:
-            logger.debug(f"Yandex image search error: {e}")
-
-        # Source 5: Wikimedia Commons File API (Open access HD real photos)
+        # Source 3: Wikimedia Commons File API (Open access HD real photos & official emblems)
+        # Prioritized right at the top for authentic, unwatermarked Indian institutional photos!
+        commons_candidates = []
         try:
             commons_url = "https://commons.wikimedia.org/w/api.php"
             params = {
@@ -380,7 +400,7 @@ class ImageManager:
                 "generator": "search",
                 "gsrsearch": cleaned_query,
                 "gsrnamespace": 6,
-                "gsrlimit": 5,
+                "gsrlimit": 4,
                 "prop": "imageinfo",
                 "iiprop": "url",
                 "iiurlwidth": 800,
@@ -393,10 +413,60 @@ class ImageManager:
                     info = page.get("imageinfo", [{}])[0]
                     thumb = info.get("thumburl") or info.get("url")
                     if thumb and thumb.startswith("http") and not any(bad in thumb.lower() for bad in [".svg", ".gif"]):
-                        if thumb not in urls:
-                            urls.append(thumb)
+                        if thumb not in urls and thumb not in commons_candidates:
+                            commons_candidates.append(thumb)
         except Exception as e:
             logger.debug(f"Wikimedia Commons search error: {e}")
+
+        # Source 4: High-Yield Yandex Images Search (Vast global and Indian news image index)
+        yandex_candidates = []
+        try:
+            encoded = requests.utils.quote(cleaned_query)
+            yandex_url = f"https://yandex.com/images/search?text={encoded}"
+            yr = self.session.get(yandex_url, timeout=5)
+            if yr.status_code == 200:
+                y_matches = re.findall(r'img_url=([^&]+)&', yr.text)
+                for ym in y_matches:
+                    decoded_u = requests.utils.unquote(ym)
+                    decoded_low = decoded_u.lower()
+                    if any(spam in decoded_low for spam in SPAM_DOMAINS):
+                        continue
+                    if decoded_u.startswith("http") and decoded_u not in urls and decoded_u not in yandex_candidates:
+                        yandex_candidates.append(decoded_u)
+                        if len(yandex_candidates) >= 4:
+                            break
+        except Exception as e:
+            logger.debug(f"Yandex image search error: {e}")
+
+        # Source 5: High-Yield Bing Image Search (Direct, real news images, filtered from entertainment/stock noise)
+        bing_candidates = []
+        try:
+            encoded = requests.utils.quote(cleaned_query)
+            bing_url = f"https://www.bing.com/images/search?q={encoded}&first=1"
+            r = self.session.get(bing_url, timeout=5)
+            if r.status_code == 200:
+                matches = re.findall(r'murl&quot;:&quot;(http[^&]+)&quot;', r.text)
+                for u in matches:
+                    u_low = u.lower()
+                    if any(spam in u_low for spam in SPAM_DOMAINS):
+                        continue
+                    if u.startswith("http") and u not in urls and u not in bing_candidates:
+                        bing_candidates.append(u)
+                        if len(bing_candidates) >= 4:
+                            break
+        except Exception as e:
+            logger.warning(f"Bing image search error: {e}")
+
+        # Interleave candidates: Wikimedia first, then Yandex, then Bing
+        for c in commons_candidates:
+            if c not in urls:
+                urls.append(c)
+        for y in yandex_candidates:
+            if y not in urls:
+                urls.append(y)
+        for b in bing_candidates:
+            if b not in urls:
+                urls.append(b)
 
         return urls
 
@@ -501,17 +571,6 @@ class ImageManager:
             # If the correct answer is a specific named entity (e.g. a leader, company, institution), add as alternative
             if correct_entity and len(correct_entity.split()) <= 4 and correct_entity not in queries_to_try:
                 queries_to_try.append(correct_entity)
-
-            # 3. If no alternative queries exist, ask AI to dynamically research tailored visual queries
-            if len(queries_to_try) <= 1 and self.engine:
-                dynamic_ai_queries = self._dynamically_generate_queries_with_ai(
-                    question_hi=q.get("question_hi", ""),
-                    question_en=q.get("question_en", ""),
-                    current_query=query
-                )
-                for dq in dynamic_ai_queries:
-                    if dq not in queries_to_try:
-                        queries_to_try.append(dq)
 
             primary_query = queries_to_try[0]
             alt_queries = queries_to_try[1:]

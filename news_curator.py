@@ -265,6 +265,7 @@ class NewsCurator:
             "     * Personalities & Leaders: Full official name with designation, press conference, or official portrait.\n"
             "     * Summits & International Bodies: Summit host city landmark, multilateral organization headquarters, or bilateral delegation meeting.\n"
             "     * Sports & Tournaments: Winning team celebration, athlete in action, or official championship trophy.\n"
+            "   - STRICT CONCISENESS (2 to 4 words): Search queries MUST be punchy and concise (strictly 2 to 4 words, e.g. 'BMC headquarters Mumbai', 'Narendra Modi cabinet', 'ICMR Keylong', 'SEBI Mumbai office'). NEVER write 7+ word full sentences. Keyword search engines fail on long sentences.\n"
             "   Set 'visual_query' as the single most tangible photo query, and provide 3-4 distinct angles in 'image_search_queries'."
         )
 

@@ -34,6 +34,37 @@ def test_free_sources_candidate_urls(monkeypatch):
     assert len(urls) > 0
 
 
+def test_candidate_urls_spam_filtering():
+    from image_manager import ImageManager, SPAM_DOMAINS
+    mgr = ImageManager()
+    urls = mgr._search_candidate_urls("Brihanmumbai Municipal Corporation")
+    assert isinstance(urls, list)
+    assert len(urls) > 0
+    # Confirm none of the candidate URLs contain spam domains
+    for u in urls:
+        u_low = u.lower()
+        for spam in ["alamy.com", "youtube.com", "gaanacdn", "lookaside.fbsbx"]:
+            assert spam not in u_low
+
+
+def test_adaptive_query_with_memory():
+    from image_manager import ImageManager
+    mgr = ImageManager()
+    history = [
+        {"query": "Brihanmumbai Municipal Corporation headquarters building Mumbai", "reason": "The image shows a poster for the television series Dark Matter"}
+    ]
+    query = mgr._generate_adaptive_query_with_memory(
+        question_hi="बीएमसी ने नए दिशानिर्देश जारी किए",
+        question_en="BMC issued new construction vehicle guidelines",
+        attempt_history=history,
+        fallback_queries=["BMC headquarters Mumbai"]
+    )
+    assert query is not None
+    assert len(query.strip()) > 0
+    assert len(query.split()) <= 5
+    assert query.lower() != history[0]["query"].lower()
+
+
 def test_image_fetching_and_verification():
     from image_manager import ImageManager
     mgr = ImageManager()
