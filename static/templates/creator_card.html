@@ -52,19 +52,19 @@
       background: #ffffff;
       display: flex;
       flex-direction: column;
+      justify-content: space-between;
     }
 
     .slide:last-child {
       page-break-after: avoid;
     }
 
-    /* HEADER */
+    /* CLEAN PURE WHITE HEADER (BORDERLESS) */
     .slide-header {
       width: 100%;
-      height: 11mm;
-      background: #00274c;
-      border-bottom: 2.2px solid #f97316;
-      padding: 1.5mm 6mm;
+      height: 12mm;
+      background: #ffffff;
+      padding: 2mm 6mm;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -86,74 +86,55 @@
       vertical-align: middle;
     }
 
-    .brand-logo-container {
-      background: #ffffff;
-      padding: 1.5px 7px;
-      border-radius: 4px;
-      display: inline-block;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.25);
-    }
-
     .brand-logo-img {
-      height: 6.5mm;
-      max-width: 42mm;
+      height: 8mm;
+      max-width: 48mm;
       object-fit: contain;
       display: block;
     }
 
     .brand-text-title {
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 900;
-      color: #ffffff;
+      color: #00274c;
       letter-spacing: 0.5px;
     }
 
     .brand-orange { color: #f97316; }
-    .brand-gold { color: #facc15; }
+    .brand-gold { color: #d97706; }
 
-    .badge-pill {
-      background: #f97316;
-      color: #ffffff;
+    /* BIGGER, CRISP DATE TEXT */
+    .date-text {
+      color: #1e293b;
       font-family: 'Noto Sans', sans-serif;
-      font-size: 8.5px;
+      font-size: 12.5px;
       font-weight: 800;
-      padding: 1.5px 6.5px;
-      border-radius: 10px;
-      display: inline-block;
-      margin-left: 5px;
-      text-transform: uppercase;
       letter-spacing: 0.3px;
     }
 
-    .date-text {
-      color: #f8fafc;
-      font-size: 8.5px;
-      font-weight: 700;
-    }
-
-    /* CONTENT WRAPPER: TWO COLUMNS FOR 16:9 WIDESCREEN */
+    /* CONTENT WRAPPER: CLEAN 16:9 WIDESCREEN BOARD */
     .content-table {
       width: 100%;
-      height: 89mm;
+      height: 87mm;
       border-collapse: collapse;
       position: relative;
       z-index: 2;
     }
 
     .col-question {
-      width: 63%;
+      width: 62%;
       vertical-align: top;
       padding: 3.5mm 4mm 2mm 6mm;
     }
 
     .col-media {
-      width: 37%;
+      width: 38%;
       vertical-align: top;
-      padding: 3.5mm 6mm 2mm 3mm;
-      border-left: 1.2px dashed #e2e8f0;
+      padding: 3.5mm 6mm 2mm 4mm;
+      /* Seamless clean board: No dashed lines or boxes */
     }
 
-    /* WATERMARK OVERLAY */
+    /* WATERMARK OVERLAY (Subtle, elegant) */
     .watermark-overlay {
       position: absolute;
       top: 52%;
@@ -206,12 +187,12 @@
       font-size: 11px;
       font-weight: 900;
       display: inline-block;
-      box-shadow: 0 1px 3px rgba(0,39,76,0.3);
+      box-shadow: 0 1px 3px rgba(0,39,76,0.25);
     }
 
     .q-stem-hi {
       color: #991b1b;
-      font-size: 12.6px;
+      font-size: 12.8px;
       font-weight: 800;
       line-height: 1.34;
       margin-bottom: 1.2px;
@@ -283,103 +264,58 @@
       margin-bottom: 1px;
     }
 
-    /* RIGHT COLUMN: HD TOPIC PHOTO & DIGITAL BOARD WORKSPACE */
+    /* RIGHT COLUMN: HD TOPIC PHOTO */
     .q-img-large {
       width: 100%;
-      height: 38mm;
+      height: 40mm;
       object-fit: cover;
       border-radius: 4px;
       border: 1.2px solid #cbd5e1;
       display: block;
-      margin-bottom: 2.5mm;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
 
-    .whiteboard-box {
-      width: 100%;
-      height: 41mm;
-      border: 1px dashed #cbd5e1;
-      border-radius: 4px;
-      background: #fafafa;
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .whiteboard-box-full {
-      width: 100%;
-      height: 82mm;
-      border: 1px dashed #cbd5e1;
-      border-radius: 4px;
-      background: #fafafa;
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .whiteboard-hint {
-      font-family: 'Noto Sans', sans-serif;
-      font-size: 8px;
-      font-weight: 700;
-      color: #94a3b8;
-      letter-spacing: 0.8px;
-      text-align: center;
-    }
-
-    /* FOOTER */
+    /* CLEAN SEAMLESS FOOTER (NO BACKGROUND COLOR, NO BORDERS) */
     .slide-footer {
       width: 100%;
       height: 8mm;
-      background: #00274c;
-      border-top: 1.8px solid #f97316;
+      background: #ffffff;
       padding: 0 6mm;
       display: flex;
-      justify-content: space-between;
       align-items: center;
       box-sizing: border-box;
       flex-shrink: 0;
     }
 
-    .footer-table {
-      width: 100%;
-      height: 100%;
-      border-collapse: collapse;
-    }
-
-    .footer-cell-left {
-      text-align: left;
-      vertical-align: middle;
-      color: #f8fafc;
-      font-size: 8px;
+    /* BIGGER, PROMINENT CREATOR HUB LINK */
+    .footer-creator-hub {
+      font-family: 'Noto Sans', sans-serif;
+      font-size: 11.5px;
       font-weight: 700;
+      color: #64748b;
     }
 
-    .footer-cell-right {
-      text-align: right;
-      vertical-align: middle;
-      color: #facc15;
-      font-size: 8px;
+    .hub-label {
+      color: #475569;
       font-weight: 800;
     }
 
-    .footer-link {
-      color: #38bdf8;
+    .hub-link {
+      color: #0284c7;
       text-decoration: none;
-      font-weight: 700;
+      font-weight: 800;
     }
 
     /* ANSWER KEY 16:9 WIDESCREEN STYLES */
     .answer-key-wrapper {
       padding: 3mm 6mm;
-      height: 89mm;
+      height: 87mm;
       position: relative;
       z-index: 2;
     }
 
     .ak-title {
-      font-size: 14.5px;
+      font-size: 15px;
       font-weight: 900;
       color: #00274c;
       text-align: center;
@@ -389,7 +325,7 @@
     }
 
     .ak-subtitle {
-      font-size: 9px;
+      font-size: 9.5px;
       color: #64748b;
       text-align: center;
       margin-bottom: 2.5mm;
@@ -441,15 +377,13 @@
   <!-- QUESTION CARDS (1 SLIDE PER QUESTION IN 16:9 FULL HD WIDESCREEN) -->
   {% for q in questions %}
   <div class="slide">
-    <!-- TOP HEADER -->
+    <!-- TOP CLEAN WHITE HEADER WITH THIN RED LINE -->
     <div class="slide-header">
       <table class="header-table">
         <tr>
           <td class="header-left">
             {% if brand_logo_data_uri %}
-            <div class="brand-logo-container">
-              <img src="{{ brand_logo_data_uri }}" class="brand-logo-img" alt="{{ brand_name }}" />
-            </div>
+            <img src="{{ brand_logo_data_uri }}" class="brand-logo-img" alt="{{ brand_name }}" />
             {% elif brand_title_html %}
             {{ brand_title_html | safe }}
             {% else %}
@@ -458,7 +392,6 @@
           </td>
           <td class="header-right">
             <span class="date-text">{{ edition_date_en }}</span>
-            <span class="badge-pill">Shift {{ shift }}</span>
           </td>
         </tr>
       </table>
@@ -506,56 +439,42 @@
           </div>
         </td>
 
-        <!-- RIGHT: HD TOPIC PHOTO & DIGITAL BOARD WORKSPACE -->
+        <!-- RIGHT: HD TOPIC PHOTO (Clean space below, no boxes or clutter) -->
         <td class="col-media">
           {% if q.image_data_uri %}
           <img src="{{ q.image_data_uri }}" class="q-img-large" alt="Topic Photo" />
-          <div class="whiteboard-box">
-            <div class="whiteboard-hint">DIGITAL BOARD WORKSPACE</div>
-          </div>
-          {% else %}
-          <div class="whiteboard-box-full">
-            <div class="whiteboard-hint">DIGITAL BOARD WORKSPACE</div>
-          </div>
           {% endif %}
         </td>
       </tr>
     </table>
 
-    <!-- BOTTOM FOOTER -->
+    <!-- CLEAN SEAMLESS FOOTER (NO BLUE BG, NO LINES, BIGGER CREATOR HUB LINK) -->
     <div class="slide-footer">
-      <table class="footer-table">
-        <tr>
-          <td class="footer-cell-left">
-            <span>Creator Hub: </span>
-            <a href="{{ creator_channel_url or channel_url }}" class="footer-link">{{ creator_channel_handle or channel_handle }}</a>
-          </td>
-          <td class="footer-cell-right">
-            <span>16:9 Full HD YouTube Teaching Slide</span>
-          </td>
-        </tr>
-      </table>
+      <div class="footer-creator-hub">
+        <span class="hub-label">Creator Hub: </span>
+        <a href="{{ creator_channel_url or channel_url }}" class="hub-link">{{ creator_channel_handle or channel_handle }}</a>
+      </div>
     </div>
   </div>
   {% endfor %}
 
   <!-- FINAL SLIDE: COMPLETE ANSWER KEY IN 16:9 WIDESCREEN -->
   <div class="slide">
+    <!-- TOP CLEAN WHITE HEADER WITH THIN RED LINE -->
     <div class="slide-header">
       <table class="header-table">
         <tr>
           <td class="header-left">
             {% if brand_logo_data_uri %}
-            <div class="brand-logo-container">
-              <img src="{{ brand_logo_data_uri }}" class="brand-logo-img" alt="{{ brand_name }}" />
-            </div>
+            <img src="{{ brand_logo_data_uri }}" class="brand-logo-img" alt="{{ brand_name }}" />
+            {% elif brand_title_html %}
+            {{ brand_title_html | safe }}
             {% else %}
             <span class="brand-text-title">{{ brand_name }}</span>
             {% endif %}
           </td>
           <td class="header-right">
             <span class="date-text">{{ edition_date_en }}</span>
-            <span class="badge-pill">Shift {{ shift }}</span>
           </td>
         </tr>
       </table>
@@ -571,7 +490,7 @@
 
     <div class="answer-key-wrapper">
       <div class="ak-title">Official Answer Key</div>
-      <div class="ak-subtitle">{{ edition_date_hi }} • Total Questions: {{ questions|length }} • Shift {{ shift }}</div>
+      <div class="ak-subtitle">{{ edition_date_hi }} • Total Questions: {{ questions|length }}</div>
 
       <!-- 5 COLUMNS GRID (10 ROWS x 5 COLS FOR 50 QUESTIONS) -->
       <table class="ak-table">
@@ -604,23 +523,17 @@
         </tbody>
       </table>
 
-      <div style="margin-top: 4mm; text-align: center; color: #64748b; font-size: 8px; font-weight: 700;">
+      <div style="margin-top: 4mm; text-align: center; color: #64748b; font-size: 8.5px; font-weight: 700;">
         YouTube & Digital Board Teaching Pack • Confidential Key for Educators
       </div>
     </div>
 
+    <!-- CLEAN FOOTER -->
     <div class="slide-footer">
-      <table class="footer-table">
-        <tr>
-          <td class="footer-cell-left">
-            <span>Creator Hub: </span>
-            <a href="{{ creator_channel_url or channel_url }}" class="footer-link">{{ creator_channel_handle or channel_handle }}</a>
-          </td>
-          <td class="footer-cell-right">
-            <span>16:9 Full HD Answer Key</span>
-          </td>
-        </tr>
-      </table>
+      <div class="footer-creator-hub">
+        <span class="hub-label">Creator Hub: </span>
+        <a href="{{ creator_channel_url or channel_url }}" class="hub-link">{{ creator_channel_handle or channel_handle }}</a>
+      </div>
     </div>
   </div>
 
