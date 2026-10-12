@@ -360,11 +360,13 @@
     </table>
 
     <!-- 2-COLUMN MAIN BODY -->
+    {% set half = ((page.questions|length) + 1) // 2 %}
+    {% set left_list = page.col_left if (page.col_left is defined and page.col_left) else page.questions[:half] %}
+    {% set right_list = page.col_right if (page.col_right is defined and page.col_right) else page.questions[half:] %}
     <div class="columns-container">
-      <!-- LEFT COLUMN: ODD QUESTIONS ON THIS PAGE -->
+      <!-- LEFT COLUMN: FIRST HALF OF QUESTIONS ON THIS PAGE (e.g. 1-5) -->
       <div class="col-left">
-        {% for q in page.questions %}
-        {% if q.num % 2 != 0 %}
+        {% for q in left_list %}
         <div class="q-card">
           <table class="q-head-table">
             <tr>
@@ -405,14 +407,12 @@
             <div class="fact-bullet" style="color: #475569;">• {{ q.exam_fact_en }}</div>
           </div>
         </div>
-        {% endif %}
         {% endfor %}
       </div>
 
-      <!-- RIGHT COLUMN: EVEN QUESTIONS ON THIS PAGE -->
+      <!-- RIGHT COLUMN: SECOND HALF OF QUESTIONS ON THIS PAGE (e.g. 6-10) -->
       <div class="col-right">
-        {% for q in page.questions %}
-        {% if q.num % 2 == 0 %}
+        {% for q in right_list %}
         <div class="q-card">
           <table class="q-head-table">
             <tr>
@@ -453,7 +453,6 @@
             <div class="fact-bullet" style="color: #475569;">• {{ q.exam_fact_en }}</div>
           </div>
         </div>
-        {% endif %}
         {% endfor %}
       </div>
     </div>

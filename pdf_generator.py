@@ -56,10 +56,13 @@ class PDFGenerator:
         for i in range(0, len(questions), PAGE_SIZE):
             page_num = (i // PAGE_SIZE) + 1
             page_questions = questions[i:i + PAGE_SIZE]
+            half = (len(page_questions) + 1) // 2
             pages.append({
                 "page_num": page_num,
                 "total_pages": total_pages,
-                "questions": page_questions
+                "questions": page_questions,
+                "col_left": page_questions[:half],
+                "col_right": page_questions[half:]
             })
 
         rendered_html = template.render(
