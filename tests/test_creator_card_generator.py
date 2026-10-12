@@ -79,8 +79,8 @@ def test_creator_pack_16_9_generation(tmp_path):
     # Verify files inside ZIP
     with zipfile.ZipFile(zip_path, "r") as z:
         names = z.namelist()
-        assert "Question_01.png" in names
-        assert "Question_02.png" in names
+        assert "Question_01.jpg" in names
+        assert "Question_02.jpg" in names
         assert any("Answer_Key" in n for n in names)
 
 def test_generate_all_creator_packs(tmp_path):
@@ -126,25 +126,25 @@ def test_generate_all_creator_packs(tmp_path):
 
     with zipfile.ZipFile(packs["hindi"][0], "r") as z:
         names = z.namelist()
-        assert "Question_01.png" in names
-        assert "Question_01_Fact.png" in names
-        assert "Question_02.png" in names
-        assert "Question_02_Fact.png" in names
+        assert "Question_01.jpg" in names
+        assert "Question_01_Fact.jpg" in names
+        assert "Question_02.jpg" in names
+        assert "Question_02_Fact.jpg" in names
         assert any("Answer_Key" in n for n in names)
 
     with zipfile.ZipFile(packs["english"][0], "r") as z:
         names = z.namelist()
-        assert "Question_01.png" in names
-        assert "Question_01_Fact.png" in names
-        assert "Question_02.png" in names
-        assert "Question_02_Fact.png" in names
+        assert "Question_01.jpg" in names
+        assert "Question_01_Fact.jpg" in names
+        assert "Question_02.jpg" in names
+        assert "Question_02_Fact.jpg" in names
         assert any("Answer_Key" in n for n in names)
 
     with zipfile.ZipFile(packs["bilingual"][0], "r") as z:
         names = z.namelist()
-        assert "Question_01.png" in names
-        assert "Question_02.png" in names
-        assert "Question_01_Fact.png" not in names
+        assert "Question_01.jpg" in names
+        assert "Question_02.jpg" in names
+        assert "Question_01_Fact.jpg" not in names
         assert any("Answer_Key" in n for n in names)
 
 def test_answer_key_pagination(tmp_path):
@@ -182,8 +182,8 @@ def test_answer_key_pagination(tmp_path):
 
     with zipfile.ZipFile(zip_path, "r") as z:
         names = z.namelist()
-        assert "Question_01.png" in names
-        assert "Question_26.png" in names
+        assert "Question_01.jpg" in names
+        assert "Question_26.jpg" in names
         assert any("Answer_Key_Part_1" in n for n in names)
         assert any("Answer_Key_Part_2" in n for n in names)
 

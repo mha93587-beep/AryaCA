@@ -156,16 +156,16 @@ class CreatorCardGenerator:
         doc.write_pdf(target=temp_pdf_path)
         logger.info(f"✅ Temporary Creator PDF ({lang_mode}) compiled: {temp_pdf_path}")
 
-        # Render PDF pages to PNG (16:9 Full HD @ 254 DPI)
+        # Render PDF pages to High-Quality Full HD JPEG (16:9 Full HD @ 254 DPI, quality=90)
         temp_img_prefix = os.path.join(output_dir, f"temp_page_{brand.brand_id}_{lang_mode}_{shift}")
-        cmd = ["pdftoppm", "-png", "-r", "254", temp_pdf_path, temp_img_prefix]
+        cmd = ["pdftoppm", "-jpeg", "-jpegopt", "quality=90", "-r", "254", temp_pdf_path, temp_img_prefix]
         res = subprocess.run(cmd, capture_output=True, text=True, timeout=90)
         if res.returncode != 0:
             logger.error(f"pdftoppm failed with code {res.returncode}: {res.stderr}")
             raise RuntimeError(f"pdftoppm failed: {res.stderr}")
 
         # Gather generated images
-        raw_images = sorted(glob.glob(f"{temp_img_prefix}-*.png"), key=lambda x: int(x.split("-")[-1].split(".")[0]))
+        raw_images = sorted(glob.glob(f"{temp_img_prefix}-*.jpg"), key=lambda x: int(x.split("-")[-1].split(".")[0]))
         if not raw_images:
             raise FileNotFoundError(f"No images generated for prefix {temp_img_prefix}")
 
@@ -183,7 +183,7 @@ class CreatorCardGenerator:
 
         zip_filename = f"{brand.file_prefix}_Creator{mode_suffix}_{date_str}_Shift-{shift}.zip"
         zip_path = os.path.join(output_dir, zip_filename)
-        preview_png_path = os.path.join(output_dir, f"{brand.file_prefix}_Creator{mode_suffix}_{date_str}_Shift-{shift}_preview.png")
+        preview_png_path = os.path.join(output_dir, f"{brand.file_prefix}_Creator{mode_suffix}_{date_str}_Shift-{shift}_preview.jpg")
 
         # Copy first slide as preview
         if os.path.exists(raw_images[0]):
@@ -199,17 +199,17 @@ class CreatorCardGenerator:
                     if is_single_lang:
                         q_num = (idx + 1) // 2
                         if idx % 2 == 1:
-                            arcname = f"Question_{q_num:02d}.png"
+                            arcname = f"Question_{q_num:02d}.jpg"
                         else:
-                            arcname = f"Question_{q_num:02d}_Fact.png"
+                            arcname = f"Question_{q_num:02d}_Fact.jpg"
                     else:
-                        arcname = f"Question_{idx:02d}.png"
+                        arcname = f"Question_{idx:02d}.jpg"
                 else:
                     ak_idx = idx - expected_q_slides
                     if len(ak_chunks) > 1:
-                        arcname = f"Answer_Key_Part_{ak_idx}_{brand.file_prefix}_{date_str}_Shift-{shift}.png"
+                        arcname = f"Answer_Key_Part_{ak_idx}_{brand.file_prefix}_{date_str}_Shift-{shift}.jpg"
                     else:
-                        arcname = f"Answer_Key_{brand.file_prefix}_{date_str}_Shift-{shift}.png"
+                        arcname = f"Answer_Key_{brand.file_prefix}_{date_str}_Shift-{shift}.jpg"
                 zf.write(img_file, arcname=arcname)
 
         logger.info(f"🎉 Creator Pack ZIP [{lang_mode}] created: {zip_path} ({os.path.getsize(zip_path)} bytes)")
