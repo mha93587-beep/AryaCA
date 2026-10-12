@@ -275,35 +275,13 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
 
-    /* CLEAN SEAMLESS FOOTER (NO BACKGROUND COLOR, NO BORDERS) */
-    .slide-footer {
+    /* CONTENT TABLE: EXPANDED FULL CANVAS */
+    .content-table {
       width: 100%;
-      height: 8mm;
-      background: #ffffff;
-      padding: 0 6mm;
-      display: flex;
-      align-items: center;
-      box-sizing: border-box;
-      flex-shrink: 0;
-    }
-
-    /* BIGGER, PROMINENT CREATOR HUB LINK */
-    .footer-creator-hub {
-      font-family: 'Noto Sans', sans-serif;
-      font-size: 11.5px;
-      font-weight: 700;
-      color: #64748b;
-    }
-
-    .hub-label {
-      color: #475569;
-      font-weight: 800;
-    }
-
-    .hub-link {
-      color: #0284c7;
-      text-decoration: none;
-      font-weight: 800;
+      height: 92mm;
+      border-collapse: collapse;
+      position: relative;
+      z-index: 2;
     }
 
     /* ANSWER KEY 16:9 WIDESCREEN STYLES */
@@ -447,14 +425,6 @@
         </td>
       </tr>
     </table>
-
-    <!-- CLEAN SEAMLESS FOOTER (NO BLUE BG, NO LINES, BIGGER CREATOR HUB LINK) -->
-    <div class="slide-footer">
-      <div class="footer-creator-hub">
-        <span class="hub-label">Creator Hub: </span>
-        <a href="{{ creator_channel_url or channel_url }}" class="hub-link">{{ creator_channel_handle or channel_handle }}</a>
-      </div>
-    </div>
   </div>
   {% endfor %}
 
@@ -525,14 +495,6 @@
 
       <div style="margin-top: 4mm; text-align: center; color: #64748b; font-size: 8.5px; font-weight: 700;">
         YouTube & Digital Board Teaching Pack • Confidential Key for Educators
-      </div>
-    </div>
-
-    <!-- CLEAN FOOTER -->
-    <div class="slide-footer">
-      <div class="footer-creator-hub">
-        <span class="hub-label">Creator Hub: </span>
-        <a href="{{ creator_channel_url or channel_url }}" class="hub-link">{{ creator_channel_handle or channel_handle }}</a>
       </div>
     </div>
   </div>
