@@ -77,7 +77,11 @@ class CreatorCardGenerator:
             options = []
             for j, opt in enumerate(raw_options, start=1):
                 val = str(opt.get("val", "")) if isinstance(opt, dict) else str(opt)
-                key = str(opt.get("key", j)) if isinstance(opt, dict) else str(j)
+                if "Prefer not to answer" in val or "अनुत्तरित प्रश्न" in val:
+                    continue
+                if len(options) >= 4:
+                    continue
+                key = str(len(options) + 1)
                 val_hi = opt.get("val_hi") if isinstance(opt, dict) else None
                 val_en = opt.get("val_en") if isinstance(opt, dict) else None
 
@@ -186,12 +190,22 @@ class CreatorCardGenerator:
             with open(raw_images[0], "rb") as src, open(preview_png_path, "wb") as dst:
                 dst.write(src.read())
 
+        is_single_lang = lang_mode in ["hindi", "english"]
+        expected_q_slides = (2 * len(formatted_questions)) if is_single_lang else len(formatted_questions)
+
         with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
             for idx, img_file in enumerate(raw_images, start=1):
-                if idx <= len(formatted_questions):
-                    arcname = f"Question_{idx:02d}.png"
+                if idx <= expected_q_slides:
+                    if is_single_lang:
+                        q_num = (idx + 1) // 2
+                        if idx % 2 == 1:
+                            arcname = f"Question_{q_num:02d}.png"
+                        else:
+                            arcname = f"Question_{q_num:02d}_Fact.png"
+                    else:
+                        arcname = f"Question_{idx:02d}.png"
                 else:
-                    ak_idx = idx - len(formatted_questions)
+                    ak_idx = idx - expected_q_slides
                     if len(ak_chunks) > 1:
                         arcname = f"Answer_Key_Part_{ak_idx}_{brand.file_prefix}_{date_str}_Shift-{shift}.png"
                     else:

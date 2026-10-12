@@ -124,6 +124,29 @@ def test_generate_all_creator_packs(tmp_path):
         assert os.path.getsize(zip_p) > 0
         assert os.path.getsize(prev_p) > 0
 
+    with zipfile.ZipFile(packs["hindi"][0], "r") as z:
+        names = z.namelist()
+        assert "Question_01.png" in names
+        assert "Question_01_Fact.png" in names
+        assert "Question_02.png" in names
+        assert "Question_02_Fact.png" in names
+        assert any("Answer_Key" in n for n in names)
+
+    with zipfile.ZipFile(packs["english"][0], "r") as z:
+        names = z.namelist()
+        assert "Question_01.png" in names
+        assert "Question_01_Fact.png" in names
+        assert "Question_02.png" in names
+        assert "Question_02_Fact.png" in names
+        assert any("Answer_Key" in n for n in names)
+
+    with zipfile.ZipFile(packs["bilingual"][0], "r") as z:
+        names = z.namelist()
+        assert "Question_01.png" in names
+        assert "Question_02.png" in names
+        assert "Question_01_Fact.png" not in names
+        assert any("Answer_Key" in n for n in names)
+
 def test_answer_key_pagination(tmp_path):
     output_dir = str(tmp_path)
     # 26 questions to trigger 2 answer key pages (> 25 per page)

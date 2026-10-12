@@ -16,8 +16,7 @@ def test_daily_magazine_template_renders():
                 {"key": "1", "val": "विकल्प A / Option A"},
                 {"key": "2", "val": "विकल्प B / Option B"},
                 {"key": "3", "val": "विकल्प C / Option C"},
-                {"key": "4", "val": "विकल्प D / Option D"},
-                {"key": "5", "val": "अनुत्तरित प्रश्न / Prefer not to answer"}
+                {"key": "4", "val": "विकल्प D / Option D"}
             ],
             "correct_ans": "2",
             "image_data_uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",

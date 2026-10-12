@@ -9,14 +9,14 @@ logger = logging.getLogger("news_curator")
 logging.basicConfig(level=logging.INFO)
 
 class OptionItem(BaseModel):
-    key: str = Field(description="Option key: '1', '2', '3', '4', '5'")
+    key: str = Field(description="Option key: '1', '2', '3', '4'")
     val: str = Field(description="Bilingual option value: 'हिंदी / English'")
 
 class ExamQuestion(BaseModel):
     num: int = Field(description="Question number (1 to 10)")
     question_hi: str = Field(description="Hindi question statement, crisp and bold")
     question_en: str = Field(description="English translation of the question statement")
-    options: List[OptionItem] = Field(description="List of exactly 5 options. Option 5 MUST be 'अनुत्तरित प्रश्न / Prefer not to answer'")
+    options: List[OptionItem] = Field(description="List of exactly 4 options (1, 2, 3, 4)")
     correct_ans: str = Field(description="Correct option number key: '1', '2', '3', or '4'")
     exam_fact_hi: str = Field(description="Exam fact / Lallantop Static GK connection in Hindi (1-2 sentences)")
     exam_fact_en: str = Field(description="Exam fact in English (1-2 sentences)")
@@ -189,8 +189,13 @@ class NewsCurator:
             target_key = target_keys[idx]
             current_ans_key = str(q.get("correct_ans", "1")).strip()
             opts = q.get("options", [])
+            clean_opts = [
+                o for o in opts
+                if "Prefer not to answer" not in str(o.get("val", "") if isinstance(o, dict) else o)
+                and "अनुत्तरित प्रश्न" not in str(o.get("val", "") if isinstance(o, dict) else o)
+            ][:4]
 
-            choices_4 = [o for o in opts[:4]]
+            choices_4 = clean_opts
             correct_val = None
             distractors = []
 
@@ -220,9 +225,6 @@ class NewsCurator:
                     new_choices.append({"key": str(slot + 1), "val": d_val})
                     d_idx += 1
 
-            # Option 5 strictly fixed
-            new_choices.append({"key": "5", "val": "अनुत्तरित प्रश्न / Prefer not to answer"})
-
             q["options"] = new_choices
             q["correct_ans"] = target_key
 
@@ -249,9 +251,7 @@ class NewsCurator:
             f"1. Exactly {batch_count} questions.\n"
             f"2. {curation_theme}\n"
             "3. Question stem MUST be bilingual: High-impact Hindi in 'question_hi', natural English in 'question_en'.\n"
-            "4. Exactly 5 options per question:\n"
-            "   - Options 1, 2, 3, 4: Bilingual choices ('हिंदी / English')\n"
-            "   - Option 5: MUST be strictly 'अनुत्तरित प्रश्न / Prefer not to answer' (BPSC/RRB modern format)\n"
+            "4. Exactly 4 options per question (Options 1, 2, 3, 4): Bilingual choices ('हिंदी / English'). Do NOT add Option 5 or 'Prefer not to answer'.\n"
             "5. 'correct_ans' MUST be '1', '2', '3', or '4'. Randomize the answer keys evenly.\n"
             "6. 'exam_fact_hi' & 'exam_fact_en': Provide rich, high-yield 'Lallantop Baatein' / Static GK connections (e.g. related constitutional article, ministry, headquarters, previous year exam facts).\n"
             "7. DYNAMIC VISUAL SEARCH QUERY GENERATION (100% question-driven, ZERO static hardcoding):\n"
@@ -288,16 +288,22 @@ class NewsCurator:
                 q_dict["exam_fact_hi"] = q_dict.get("exam_fact_hi", "").replace("**", "").strip()
                 q_dict["exam_fact_en"] = q_dict.get("exam_fact_en", "").replace("**", "").strip()
 
-                # Ensure 5th option format
+                # Clean 4 options format (drop Option 5)
                 opts = q_dict.get("options", [])
+                clean_opts = []
                 for opt in opts:
                     if isinstance(opt, dict):
-                        opt["val"] = opt.get("val", "").replace("**", "").strip()
-                if len(opts) < 5:
-                    opts.append({"key": "5", "val": "अनुत्तरित प्रश्न / Prefer not to answer"})
-                else:
-                    opts[4] = {"key": "5", "val": "अनुत्तरित प्रश्न / Prefer not to answer"}
-                q_dict["options"] = opts
+                        v = opt.get("val", "").replace("**", "").strip()
+                    else:
+                        v = str(opt).replace("**", "").strip()
+                    if "Prefer not to answer" in v or "अनुत्तरित प्रश्न" in v:
+                        continue
+                    clean_opts.append({"key": str(len(clean_opts) + 1), "val": v})
+                    if len(clean_opts) >= 4:
+                        break
+                while len(clean_opts) < 4:
+                    clean_opts.append({"key": str(len(clean_opts) + 1), "val": "विकल्प उपलब्ध नहीं / Option not available"})
+                q_dict["options"] = clean_opts
                 formatted.append(q_dict)
 
             if formatted:
@@ -318,8 +324,7 @@ class NewsCurator:
                     {"key": "1", "val": "सेमीकंडक्टर चिप्स / Semiconductor Chips"},
                     {"key": "2", "val": "सौर ऊर्जा पैनल / Solar Energy Panels"},
                     {"key": "3", "val": "इलेक्ट्रिक वाहन बैटरी / Electric Vehicle Batteries"},
-                    {"key": "4", "val": "ग्रीन हाइड्रोजन / Green Hydrogen"},
-                    {"key": "5", "val": "अनुत्तरित प्रश्न / Prefer not to answer"}
+                    {"key": "4", "val": "ग्रीन हाइड्रोजन / Green Hydrogen"}
                 ],
                 "correct_ans": "1",
                 "exam_fact_hi": "भारत सेमीकंडक्टर मिशन (ISM) की शुरुआत इलेक्ट्रॉनिक्स एवं आईटी मंत्रालय (MeitY) द्वारा की गई है।",
@@ -335,8 +340,7 @@ class NewsCurator:
                     {"key": "1", "val": "मुख्यमंत्री उद्यमी योजना / CM Udyami Yojana"},
                     {"key": "2", "val": "बिहार स्टार्ट-अप नीति / Bihar Startup Policy"},
                     {"key": "3", "val": "कौशल विकास मिशन / Skill Development Mission"},
-                    {"key": "4", "val": "युवा शक्ति पहल / Yuva Shakti Initiative"},
-                    {"key": "5", "val": "अनुत्तरित प्रश्न / Prefer not to answer"}
+                    {"key": "4", "val": "युवा शक्ति पहल / Yuva Shakti Initiative"}
                 ],
                 "correct_ans": "1",
                 "exam_fact_hi": "मुख्यमंत्री उद्यमी योजना के तहत बिहार सरकार 10 लाख रुपये तक की प्रोत्साहन सहायता प्रदान करती है।",

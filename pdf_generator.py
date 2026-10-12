@@ -70,6 +70,28 @@ class PDFGenerator:
         template = self.jinja_env.get_template("daily_magazine.html")
         date_hi = self.format_date_hindi(date_str)
 
+        # Clean and sanitize questions: strictly remove Option 5 / 'Prefer not to answer'
+        clean_questions = []
+        for q in questions:
+            q_copy = dict(q)
+            raw_opts = q_copy.get("options", [])
+            filtered_opts = []
+            for opt in raw_opts:
+                val_str = str(opt.get("val", "") if isinstance(opt, dict) else opt)
+                if "Prefer not to answer" in val_str or "अनुत्तरित प्रश्न" in val_str:
+                    continue
+                if len(filtered_opts) >= 4:
+                    continue
+                if isinstance(opt, dict):
+                    opt_copy = dict(opt)
+                    opt_copy["key"] = str(len(filtered_opts) + 1)
+                    filtered_opts.append(opt_copy)
+                else:
+                    filtered_opts.append({"key": str(len(filtered_opts) + 1), "val": val_str})
+            q_copy["options"] = filtered_opts
+            clean_questions.append(q_copy)
+        questions = clean_questions
+
         # Multi-page pagination: 10 questions per page
         PAGE_SIZE = 10
         pages = []

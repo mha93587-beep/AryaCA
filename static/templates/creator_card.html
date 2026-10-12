@@ -47,6 +47,9 @@
       width: 192mm;
       height: 108mm;
       page-break-after: always;
+      break-after: page;
+      page-break-inside: avoid;
+      break-inside: avoid;
       position: relative;
       overflow: hidden;
       background: #ffffff;
@@ -190,85 +193,89 @@
       box-shadow: 0 1px 3px rgba(0,39,76,0.25);
     }
 
-    /* BILINGUAL DEFAULT STYLES */
-    .q-stem-hi {
+    /* BILINGUAL DEFAULT STYLES (RESTORED TO BALANCED PROPORTIONS) */
+    .mode-bilingual .q-badge {
+      width: 7mm;
+      height: 7mm;
+      line-height: 7mm;
+      font-size: 11px;
+    }
+
+    .mode-bilingual .q-stem-hi {
       color: #991b1b;
-      font-size: 15.8px;
+      font-size: 13.5px;
       font-weight: 800;
-      line-height: 1.34;
-      margin-bottom: 1.5px;
+      line-height: 1.32;
+      margin-bottom: 1.2px;
     }
 
-    .q-stem-en {
+    .mode-bilingual .q-stem-en {
       color: #1d4ed8;
-      font-size: 13.2px;
+      font-size: 11.2px;
       font-weight: 600;
-      line-height: 1.25;
+      line-height: 1.22;
     }
 
-    /* OPTIONS */
-    .options-container {
+    .mode-bilingual .options-container {
       margin-bottom: 2mm;
       padding-left: 1mm;
     }
 
-    .opt-row {
-      margin-bottom: 2mm;
-      line-height: 1.3;
-      font-size: 12.8px;
+    .mode-bilingual .opt-row {
+      margin-bottom: 1.8mm;
+      line-height: 1.25;
+      font-size: 11px;
       color: #1e293b;
     }
 
-    .opt-key {
+    .mode-bilingual .opt-key {
       display: inline-block;
-      width: 5.5mm;
-      height: 5.5mm;
+      width: 4.8mm;
+      height: 4.8mm;
       background: #f97316;
       color: #ffffff;
       border-radius: 50%;
       text-align: center;
-      line-height: 5.5mm;
-      font-size: 10.5px;
+      line-height: 4.8mm;
+      font-size: 9.5px;
       font-weight: 800;
-      margin-right: 2.2mm;
+      margin-right: 1.8mm;
       vertical-align: middle;
     }
 
-    /* EXAM FACT BOX */
-    .fact-box {
+    .mode-bilingual .fact-box {
       background: #f0f9ff;
-      border-left: 3mm solid #0284c7;
-      border-radius: 3.5px;
-      padding: 2mm 3.5mm;
+      border-left: 2.8px solid #0284c7;
+      border-radius: 3px;
+      padding: 1.8mm 3mm;
       margin-top: 1.5mm;
       box-shadow: 0 1px 2px rgba(2,132,199,0.06);
     }
 
-    .fact-tag {
+    .mode-bilingual .fact-tag {
       background: #0284c7;
       color: #ffffff;
       font-family: 'Noto Sans', sans-serif;
-      font-size: 9px;
+      font-size: 8px;
       font-weight: 800;
-      padding: 1px 5mm;
+      padding: 1px 4.5px;
       border-radius: 2px;
       display: inline-block;
-      margin-bottom: 1.5px;
+      margin-bottom: 1px;
       text-transform: uppercase;
       letter-spacing: 0.3px;
     }
 
-    .fact-bullet {
-      font-size: 11.5px;
-      line-height: 1.3;
+    .mode-bilingual .fact-bullet {
+      font-size: 10px;
+      line-height: 1.25;
       color: #0f172a;
-      margin-bottom: 1.2px;
+      margin-bottom: 1px;
     }
 
-    /* RIGHT COLUMN: HD TOPIC PHOTO */
-    .q-img-large {
+    .mode-bilingual .q-img-large {
       width: 100%;
-      height: 45mm;
+      height: 42mm;
       object-fit: cover;
       border-radius: 5px;
       border: 1.2px solid #cbd5e1;
@@ -276,62 +283,153 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
 
-    /* SINGLE LANGUAGE EXTRA-LARGE MODES (Hindi-Only & English-Only) */
-    .mode-hindi .q-badge,
-    .mode-english .q-badge {
+    /* SINGLE LANGUAGE EXTRA-LARGE MODES (QUESTION SLIDE) */
+    .slide-question.mode-hindi .q-badge,
+    .slide-question.mode-english .q-badge {
       width: 8.5mm;
       height: 8.5mm;
       line-height: 8.5mm;
       font-size: 13.5px;
     }
 
-    .mode-hindi .q-stem-hi,
-    .mode-english .q-stem-en {
-      font-size: 20px;
+    .slide-question.mode-hindi .q-stem-hi,
+    .slide-question.mode-english .q-stem-en {
+      font-size: 19px;
       font-weight: 800;
       line-height: 1.38;
-      margin-bottom: 2.5px;
+      margin-bottom: 3.5mm;
     }
 
-    .mode-english .q-stem-en {
+    .slide-question.mode-english .q-stem-en {
       color: #00274c;
     }
 
-    .mode-hindi .opt-row,
-    .mode-english .opt-row {
-      margin-bottom: 2.8mm;
+    .slide-question.mode-hindi .opt-row,
+    .slide-question.mode-english .opt-row {
+      margin-bottom: 3.5mm;
       line-height: 1.35;
       font-size: 15.5px;
       color: #1e293b;
       font-weight: 600;
     }
 
-    .mode-hindi .opt-key,
-    .mode-english .opt-key {
-      width: 6.4mm;
-      height: 6.4mm;
-      line-height: 6.4mm;
+    .slide-question.mode-hindi .opt-key,
+    .slide-question.mode-english .opt-key {
+      width: 6.5mm;
+      height: 6.5mm;
+      line-height: 6.5mm;
       font-size: 12px;
       margin-right: 2.5mm;
     }
 
-    .mode-hindi .fact-box,
-    .mode-english .fact-box {
-      border-left: 3.5mm solid #0284c7;
-      padding: 2.5mm 4mm;
-      margin-top: 2mm;
+    .slide-question.mode-hindi .q-img-large,
+    .slide-question.mode-english .q-img-large {
+      width: 100%;
+      height: 65mm;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1.2px solid #cbd5e1;
+      display: block;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
 
-    .mode-hindi .fact-bullet,
-    .mode-english .fact-bullet {
+    /* SINGLE LANGUAGE EXAM FACT SLIDE (IMMEDIATELY AFTER QUESTION) */
+    .slide-fact .col-fact-text {
+      width: 62%;
+      vertical-align: top;
+      padding: 3mm 4mm 2mm 6mm;
+    }
+
+    .slide-fact .col-media {
+      width: 38%;
+      vertical-align: top;
+      padding: 3mm 6mm 2mm 4mm;
+    }
+
+    .fact-header-badge-row {
+      margin-bottom: 2.5mm;
+    }
+
+    .fact-header-badge-row .q-badge {
+      width: 8.5mm;
+      height: 8.5mm;
+      line-height: 8.5mm;
+      font-size: 13.5px;
+      margin-right: 2.5mm;
+      vertical-align: middle;
+    }
+
+    .fact-ans-pill {
+      background: #16a34a;
+      color: #ffffff;
+      font-family: 'Noto Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 900;
+      padding: 1.5mm 4.5mm;
+      border-radius: 4px;
+      display: inline-block;
+      vertical-align: middle;
+      letter-spacing: 0.3px;
+      box-shadow: 0 1px 3px rgba(22,163,74,0.3);
+    }
+
+    .fact-question-recap {
       font-size: 13.5px;
       line-height: 1.35;
+      color: #475569;
+      margin-bottom: 3.5mm;
+      padding-bottom: 2mm;
+      border-bottom: 1.2px dashed #cbd5e1;
+      font-weight: 600;
     }
 
-    .mode-hindi .q-img-large,
-    .mode-english .q-img-large {
-      height: 52mm;
+    .fact-big-card {
+      background: #f0f9ff;
+      border-left: 4mm solid #0284c7;
+      border-radius: 5px;
+      padding: 3mm 4.5mm;
+      box-shadow: 0 1px 3px rgba(2,132,199,0.1);
+    }
+
+    .fact-tag-header {
+      margin-bottom: 2.5mm;
+    }
+
+    .fact-tag-header .fact-tag {
+      background: #0284c7;
+      color: #ffffff;
+      font-family: 'Noto Sans', sans-serif;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 1px 4.5mm;
+      border-radius: 2px;
+      display: inline-block;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .fact-tag-title {
+      font-size: 12px;
+      font-weight: 800;
+      color: #0369a1;
+      margin-left: 2.5mm;
+    }
+
+    .fact-big-body {
+      font-size: 16px;
+      line-height: 1.45;
+      color: #0f172a;
+      font-weight: 600;
+    }
+
+    .slide-fact .q-img-large {
+      width: 100%;
+      height: 65mm;
+      object-fit: cover;
       border-radius: 6px;
+      border: 1.2px solid #cbd5e1;
+      display: block;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
 
     /* CONTENT TABLE: EXPANDED FULL CANVAS */
@@ -412,8 +510,159 @@
 <body>
 
   <!-- QUESTION CARDS (1 SLIDE PER QUESTION IN 16:9 FULL HD WIDESCREEN) -->
+  <!-- QUESTION CARDS (1 SLIDE PER QUESTION FOR BILINGUAL, 2 SLIDES PER QUESTION FOR HINDI/ENGLISH) -->
   {% for q in questions %}
-  <div class="slide mode-{{ lang_mode or 'bilingual' }}">
+  {% if lang_mode in ['hindi', 'english'] %}
+  <!-- SLIDE 1: QUESTION SLIDE (NO FACT BOX, LARGE READABLE FONTS) -->
+  <div class="slide mode-{{ lang_mode }} slide-question">
+    <!-- TOP CLEAN WHITE HEADER WITH DATE -->
+    <div class="slide-header">
+      <table class="header-table">
+        <tr>
+          <td class="header-left">
+            {% if brand_logo_data_uri %}
+            <img src="{{ brand_logo_data_uri }}" class="brand-logo-img" alt="{{ brand_name }}" />
+            {% elif brand_title_html %}
+            {{ brand_title_html | safe }}
+            {% else %}
+            <span class="brand-text-title">{{ brand_name }}</span>
+            {% endif %}
+          </td>
+          <td class="header-right">
+            <span class="date-text">{{ edition_date_en }}</span>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- WATERMARK OVERLAY -->
+    <div class="watermark-overlay">
+      {% if brand_logo_data_uri %}
+      <img src="{{ brand_logo_data_uri }}" alt="Watermark" />
+      {% else %}
+      <div class="watermark-text">{{ brand_name }}</div>
+      {% endif %}
+    </div>
+
+    <!-- MAIN TWO-COLUMN CONTENT (16:9 Widescreen) -->
+    <table class="content-table">
+      <tr>
+        <!-- LEFT: QUESTION STEM & 4 OPTIONS -->
+        <td class="col-question">
+          <table class="q-head-table">
+            <tr>
+              <td class="q-badge-cell">
+                <span class="q-badge">{{ q.num }}</span>
+              </td>
+              <td>
+                {% if lang_mode == 'hindi' %}
+                <div class="q-stem-hi">{{ q.question_hi or q.question_en }}</div>
+                {% else %}
+                <div class="q-stem-en">{{ q.question_en or q.question_hi }}</div>
+                {% endif %}
+              </td>
+            </tr>
+          </table>
+
+          <div class="options-container">
+            {% for opt in q.options %}
+            <div class="opt-row">
+              <span class="opt-key">{{ opt.key }}</span>
+              {% if lang_mode == 'hindi' %}
+              <span>{{ opt.val_hi or opt.val }}</span>
+              {% else %}
+              <span>{{ opt.val_en or opt.val }}</span>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+        </td>
+
+        <!-- RIGHT: HD TOPIC PHOTO -->
+        <td class="col-media">
+          {% if q.image_data_uri %}
+          <img src="{{ q.image_data_uri }}" class="q-img-large" alt="Topic Photo" />
+          {% endif %}
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- SLIDE 2: EXAM FACT SLIDE (IMMEDIATELY AFTER QUESTION SLIDE) -->
+  <div class="slide mode-{{ lang_mode }} slide-fact">
+    <!-- TOP CLEAN WHITE HEADER WITH DATE -->
+    <div class="slide-header">
+      <table class="header-table">
+        <tr>
+          <td class="header-left">
+            {% if brand_logo_data_uri %}
+            <img src="{{ brand_logo_data_uri }}" class="brand-logo-img" alt="{{ brand_name }}" />
+            {% elif brand_title_html %}
+            {{ brand_title_html | safe }}
+            {% else %}
+            <span class="brand-text-title">{{ brand_name }}</span>
+            {% endif %}
+          </td>
+          <td class="header-right">
+            <span class="date-text">{{ edition_date_en }}</span>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- WATERMARK OVERLAY -->
+    <div class="watermark-overlay">
+      {% if brand_logo_data_uri %}
+      <img src="{{ brand_logo_data_uri }}" alt="Watermark" />
+      {% else %}
+      <div class="watermark-text">{{ brand_name }}</div>
+      {% endif %}
+    </div>
+
+    <!-- MAIN TWO-COLUMN CONTENT FOR FACT -->
+    <table class="content-table">
+      <tr>
+        <!-- LEFT: QUESTION RECAP, ANSWER PILL & BIG FACT CARD -->
+        <td class="col-fact-text">
+          <div class="fact-header-badge-row">
+            <span class="q-badge">{{ q.num }}</span>
+            <span class="fact-ans-pill">
+              {% if lang_mode == 'hindi' %}सही उत्तर: विकल्प {{ q.correct_ans }}{% else %}Correct Answer: Option {{ q.correct_ans }}{% endif %}
+            </span>
+          </div>
+
+          <div class="fact-question-recap">
+            {% if lang_mode == 'hindi' %}{{ q.question_hi or q.question_en }}{% else %}{{ q.question_en or q.question_hi }}{% endif %}
+          </div>
+
+          <div class="fact-big-card">
+            <div class="fact-tag-header">
+              <span class="fact-tag">EXAM FACT</span>
+              <span class="fact-tag-title">{% if lang_mode == 'hindi' %}परीक्षा उपयोगी विशेष तथ्य{% else %}High-Yield Exam GK Points{% endif %}</span>
+            </div>
+            <div class="fact-big-body">
+              {% if lang_mode == 'hindi' %}
+              • {{ q.exam_fact_hi or q.exam_fact_en }}
+              {% else %}
+              • {{ q.exam_fact_en or q.exam_fact_hi }}
+              {% endif %}
+            </div>
+          </div>
+        </td>
+
+        <!-- RIGHT: HD TOPIC PHOTO -->
+        <td class="col-media">
+          {% if q.image_data_uri %}
+          <img src="{{ q.image_data_uri }}" class="q-img-large" alt="Topic Photo" />
+          {% endif %}
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  {% else %}
+  <!-- BILINGUAL MODE: EVERYTHING ON ONE SCREEN (BALANCED SIZES) -->
+  <div class="slide mode-bilingual">
     <!-- TOP CLEAN WHITE HEADER WITH DATE -->
     <div class="slide-header">
       <table class="header-table">
@@ -454,14 +703,8 @@
                 <span class="q-badge">{{ q.num }}</span>
               </td>
               <td>
-                {% if lang_mode == 'hindi' %}
-                <div class="q-stem-hi">{{ q.question_hi or q.question_en }}</div>
-                {% elif lang_mode == 'english' %}
-                <div class="q-stem-en">{{ q.question_en or q.question_hi }}</div>
-                {% else %}
                 <div class="q-stem-hi">{{ q.question_hi }}</div>
                 <div class="q-stem-en">({{ q.question_en }})</div>
-                {% endif %}
               </td>
             </tr>
           </table>
@@ -470,27 +713,15 @@
             {% for opt in q.options %}
             <div class="opt-row">
               <span class="opt-key">{{ opt.key }}</span>
-              {% if lang_mode == 'hindi' %}
-              <span>{{ opt.val_hi or opt.val }}</span>
-              {% elif lang_mode == 'english' %}
-              <span>{{ opt.val_en or opt.val }}</span>
-              {% else %}
               <span>{{ opt.val }}</span>
-              {% endif %}
             </div>
             {% endfor %}
           </div>
 
           <div class="fact-box">
             <span class="fact-tag">Exam Fact</span>
-            {% if lang_mode == 'hindi' %}
-            <div class="fact-bullet">• {{ q.exam_fact_hi or q.exam_fact_en }}</div>
-            {% elif lang_mode == 'english' %}
-            <div class="fact-bullet">• {{ q.exam_fact_en or q.exam_fact_hi }}</div>
-            {% else %}
             <div class="fact-bullet">• {{ q.exam_fact_hi }}</div>
             <div class="fact-bullet" style="color: #475569;">• {{ q.exam_fact_en }}</div>
-            {% endif %}
           </div>
         </td>
 
@@ -503,6 +734,7 @@
       </tr>
     </table>
   </div>
+  {% endif %}
   {% endfor %}
 
   <!-- FINAL SLIDES: COMPLETE ANSWER KEY IN PAGINATED 16:9 CHUNKS (MAX 25 QUESTIONS PER SLIDE) -->

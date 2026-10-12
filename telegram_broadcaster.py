@@ -156,12 +156,12 @@ class TelegramBroadcaster:
         caption_header = (
             f"🎬 <b>{brand.name} — Creator Edition (Teaching Cards Pack)</b>\n"
             f"📅 <b>{date_str}</b>{shift_tag}{time_tag}\n\n"
-            f"🎯 <b>{count} Full HD (16:9) Cards + Paginated Answer Keys</b>\n"
+            f"🎯 <b>16:9 Full HD Presentation Slides + Paginated Answer Keys</b>\n"
             f"✨ YouTube, Digital Board & Touchscreen Teaching के लिए तैयार\n\n"
-            f"📦 <b>3 Formats Included:</b>\n"
-            f"1️⃣ <b>द्विभाषी (Bilingual)</b> — Hindi & English subtitles\n"
-            f"2️⃣ <b>केवल हिंदी (Hindi Only)</b> — Extra-Large Fonts\n"
-            f"3️⃣ <b>English Only</b> — Extra-Large Fonts\n\n"
+            f"📦 <b>3 Teaching Formats Included:</b>\n"
+            f"1️⃣ <b>द्विभाषी (Bilingual)</b> — Question & Fact on Single Slide (4 Options)\n"
+            f"2️⃣ <b>केवल हिंदी (Hindi Only)</b> — Extra-Large Fonts (Question Slide + Dedicated Fact Slide)\n"
+            f"3️⃣ <b>English Only</b> — Extra-Large Fonts (Question Slide + Dedicated Fact Slide)\n\n"
             f"👉 Join Creator Hub: <a href=\"{creator_url}\">{creator_handle}</a>"
         )
 
@@ -187,16 +187,16 @@ class TelegramBroadcaster:
 
                 # 2. Collect all ZIP files to broadcast
                 packs_to_send = [
-                    (zip_path, "Bilingual Pack (द्विभाषी)", f"Includes {count} 16:9 Cards (Hindi + English) + Answer Key.")
+                    (zip_path, "Bilingual Pack (द्विभाषी)", f"Includes {count} 16:9 Cards (Hindi + English) + Paginated Answer Key.")
                 ]
                 if extra_zip_paths:
                     if "hindi" in extra_zip_paths and os.path.exists(extra_zip_paths["hindi"]):
                         packs_to_send.append(
-                            (extra_zip_paths["hindi"], "Hindi Only Pack (केवल हिंदी)", f"Includes {count} 16:9 Cards (Extra-Large Hindi Fonts) + Answer Key.")
+                            (extra_zip_paths["hindi"], "Hindi Only Pack (केवल हिंदी)", f"Includes {count} Question Cards + {count} Dedicated Fact Cards (Extra-Large Hindi Fonts) + Answer Key.")
                         )
                     if "english" in extra_zip_paths and os.path.exists(extra_zip_paths["english"]):
                         packs_to_send.append(
-                            (extra_zip_paths["english"], "English Only Pack", f"Includes {count} 16:9 Cards (Extra-Large English Fonts) + Answer Key.")
+                            (extra_zip_paths["english"], "English Only Pack", f"Includes {count} Question Cards + {count} Dedicated Fact Cards (Extra-Large English Fonts) + Answer Key.")
                         )
 
                 doc_url = f"https://api.telegram.org/bot{self.bot_token}/sendDocument"
