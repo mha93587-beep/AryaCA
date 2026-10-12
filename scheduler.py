@@ -17,18 +17,20 @@ from news_curator import NewsCurator
 from image_manager import ImageManager
 from pdf_generator import PDFGenerator
 from telegram_broadcaster import TelegramBroadcaster
+from brand_manager import BrandManager, BrandConfig
 
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-logger = logging.getLogger("AryaCA_Scheduler")
+logger = logging.getLogger("CurrentAffairs_Scheduler")
 
-def resolve_shift_and_time(date_str: str, manual_shift: Optional[int] = None) -> Tuple[int, str]:
+def resolve_shift_and_time(brand_id: str, date_str: str, manual_shift: Optional[int] = None) -> Tuple[int, str]:
     """
-    Determines current shift number (1, 2, 3, 4...) and formatted IST time (e.g. '06:00 AM IST').
+    Determines current shift number (1, 2, 3, 4...) and formatted IST time (e.g. '06:00 AM IST')
+    specifically for the given brand_id.
     - If manual_shift is passed, uses that explicitly.
-    - Otherwise, automatically queries GitHub Actions API for today's runs of this workflow,
-      or inspects local outputs folder, or falls back to time of day.
+    - Otherwise, automatically queries GitHub Actions API for today's runs of this brand/workflow,
+      or inspects local outputs folder for this brand, or falls back to time of day.
     """
     import datetime
     import requests
@@ -50,30 +52,35 @@ def resolve_shift_and_time(date_str: str, manual_shift: Optional[int] = None) ->
         if gh_token:
             headers["Authorization"] = f"token {gh_token}"
         repo_slug = os.getenv("GITHUB_REPOSITORY", "mha93587-beep/AryaCA")
-        url = f"https://api.github.com/repos/{repo_slug}/actions/workflows/daily_dispatch.yml/runs?per_page=30"
+        url = f"https://api.github.com/repos/{repo_slug}/actions/workflows/daily_dispatch.yml/runs?per_page=50"
         resp = requests.get(url, headers=headers, timeout=8)
         if resp.status_code == 200:
             data = resp.json()
             runs_today = 0
             for r in data.get("workflow_runs", []):
                 ca = r.get("created_at", "")
+                title = (r.get("display_title") or r.get("name") or "").lower()
                 if ca:
                     r_dt = datetime.datetime.fromisoformat(ca.replace("Z", "+00:00")).astimezone(ist_tz)
                     if r_dt.strftime("%Y-%m-%d") == today_ist_str:
-                        runs_today += 1
+                        # Check if this run was for our brand or for all
+                        if f"[{brand_id}]" in title or "[all]" in title or brand_id in title:
+                            runs_today += 1
             if runs_today > 0:
-                logger.info(f"🔢 Detected {runs_today} run(s) today from GitHub Actions API -> Assigning Shift {runs_today}")
+                logger.info(f"🔢 [{brand_id}] Detected {runs_today} run(s) today from GitHub Actions API -> Assigning Shift {runs_today}")
                 return runs_today, time_str_ist
     except Exception as e:
-        logger.debug(f"GitHub API run count error: {e}")
+        logger.debug(f"GitHub API run count error for {brand_id}: {e}")
 
-    # 2. Try detecting via local output files for date_str
+    # 2. Try detecting via local output files for this brand and date_str
     try:
         import glob
-        existing_shifts = glob.glob(os.path.join(BASE_DIR, "outputs", f"AryaCA_Daily_{date_str}_Shift-*.pdf"))
+        brand_cfg = BrandManager.get_brand(brand_id)
+        prefix = brand_cfg.file_prefix if brand_cfg else "AryaCA"
+        existing_shifts = glob.glob(os.path.join(BASE_DIR, "outputs", f"{prefix}_Daily_{date_str}_Shift-*.pdf"))
         if existing_shifts:
             detected_shift = len(existing_shifts) + 1
-            logger.info(f"🔢 Detected {len(existing_shifts)} existing shift PDF(s) in outputs -> Assigning Shift {detected_shift}")
+            logger.info(f"🔢 [{brand_id}] Detected {len(existing_shifts)} existing shift PDF(s) in outputs -> Assigning Shift {detected_shift}")
             return detected_shift, time_str_ist
     except Exception:
         pass
@@ -89,26 +96,48 @@ def resolve_shift_and_time(date_str: str, manual_shift: Optional[int] = None) ->
     else:
         shift_num = 4
 
-    logger.info(f"🔢 Assigned Shift {shift_num} based on time slot ({time_str_ist})")
+    logger.info(f"🔢 [{brand_id}] Assigned Shift {shift_num} based on time slot ({time_str_ist})")
     return shift_num, time_str_ist
 
-def run_pipeline(date_str: str, count: int = 50, shift: Optional[int] = None, skip_telegram: bool = False, dry_run: bool = False):
-    shift_num, time_str_ist = resolve_shift_and_time(date_str=date_str, manual_shift=shift)
+def run_pipeline(date_str: str, 
+                 count: int = 50, 
+                 brand: Optional[str] = "affairs_index", 
+                 shift: Optional[int] = None, 
+                 skip_telegram: bool = False, 
+                 dry_run: bool = False):
+    
+    brand_key = BrandManager.normalize_brand_id(brand or os.getenv("DEFAULT_BRAND", "affairs_index"))
+    if not brand_key:
+        logger.error("❌ No brand selected! Please specify --brand affairs_index, --brand aryaca, or --brand all")
+        return 1
+
+    if brand_key == "all":
+        target_brands = BrandManager.get_all_brands()
+    else:
+        b = BrandManager.get_brand(brand_key)
+        if not b:
+            logger.error(f"❌ Unknown brand '{brand}'. Available: {BrandManager.get_all_brand_ids()} or 'all'")
+            return 1
+        target_brands = [b]
+
+    brand_names = ", ".join([b.name for b in target_brands])
     logger.info("=" * 60)
-    logger.info(f"🚀 AryaCA Daily Pipeline: Date={date_str} | Shift={shift_num} ({time_str_ist}) | Questions={count}")
+    logger.info(f"🚀 Daily Current Affairs Pipeline: Date={date_str} | Brand(s)={brand_names} | Questions={count}")
     logger.info("=" * 60)
 
     if dry_run:
         logger.info("ℹ️ Dry-run mode enabled. Simulating execution...")
-        print(f"AryaCA Pipeline Dry-Run Complete for Date: {date_str}, Shift: {shift_num} ({time_str_ist}).")
+        for b in target_brands:
+            s_num, s_time = resolve_shift_and_time(brand_id=b.brand_id, date_str=date_str, manual_shift=shift)
+            print(f"[{b.name}] Pipeline Dry-Run Complete for Date: {date_str}, Shift: {s_num} ({s_time}). Target Channels: {b.get_effective_chat_ids()}")
         return 0
 
     # Step 1: Engine Initialization
     logger.info("1️⃣ Initializing Gemini Rotating Engine...")
     engine = GeminiRotationEngine()
 
-    # Step 2: Curate Questions
-    logger.info("2️⃣ Curating exam-oriented bilingual MCQs & Lallantop facts across diverse categories...")
+    # Step 2: Curate Questions (Common to all brands)
+    logger.info(f"2️⃣ Curating exam-oriented bilingual MCQs & Lallantop facts for {date_str} (Count: {count})...")
     curator = NewsCurator(engine=engine)
     questions = curator.curate_daily_questions(date_str=date_str, count=count)
     logger.info(f"✅ Generated {len(questions)} questions.")
@@ -118,48 +147,61 @@ def run_pipeline(date_str: str, count: int = 50, shift: Optional[int] = None, sk
     img_mgr = ImageManager(engine=engine)
     img_mgr.fetch_images_for_questions(questions=questions, max_workers=4)
 
-    # Step 4: Render Multi-Page Dual-Column A4 PDF & Page 1 Preview
-    logger.info(f"4️⃣ Compiling Multi-Page Dual-Column A4 Magazine PDF (Shift {shift_num}) with WeasyPrint...")
+    # Step 4 & 5: Render Multi-Page Dual-Column A4 PDF & Broadcast per Brand
     pdf_gen = PDFGenerator()
-    pdf_path, png_path = pdf_gen.generate_edition(
-        date_str=date_str,
-        questions=questions,
-        shift_num=shift_num,
-        time_str_ist=time_str_ist
-    )
-    logger.info(f"✅ PDF File: {pdf_path}")
-    logger.info(f"✅ Preview PNG: {png_path}")
-
-    # Step 5: Multi-Channel Telegram Broadcasting
+    broadcaster = None
     if not skip_telegram:
-        logger.info("5️⃣ Broadcasting PDF and preview to all configured Telegram channels...")
         try:
             broadcaster = TelegramBroadcaster()
-            results = broadcaster.broadcast_edition(
-                pdf_path=pdf_path,
-                preview_png_path=png_path,
-                date_str=date_str,
-                question_count=len(questions),
-                shift_num=shift_num,
-                time_str_ist=time_str_ist
-            )
-            logger.info(f"📢 Broadcast Delivery Report: {results}")
         except Exception as e:
-            logger.error(f"❌ Telegram broadcast error: {e}")
-    else:
-        logger.info("⏭️ Telegram broadcast skipped (--no-telegram flag).")
+            logger.warning(f"TelegramBroadcaster init warning: {e}")
+
+    for b in target_brands:
+        shift_num, time_str_ist = resolve_shift_and_time(brand_id=b.brand_id, date_str=date_str, manual_shift=shift)
+        logger.info(f"4️⃣ Compiling Multi-Page Dual-Column A4 Magazine PDF for brand [{b.name}] (Shift {shift_num})...")
+        pdf_path, png_path = pdf_gen.generate_edition(
+            date_str=date_str,
+            questions=questions,
+            brand_id=b.brand_id,
+            shift_num=shift_num,
+            time_str_ist=time_str_ist
+        )
+        logger.info(f"✅ [{b.name}] PDF File: {pdf_path}")
+        logger.info(f"✅ [{b.name}] Preview PNG: {png_path}")
+
+        if not skip_telegram and broadcaster:
+            target_channels = b.get_effective_chat_ids()
+            logger.info(f"5️⃣ Broadcasting [{b.name}] to channel(s): {target_channels}...")
+            try:
+                results = broadcaster.broadcast_edition(
+                    pdf_path=pdf_path,
+                    preview_png_path=png_path,
+                    date_str=date_str,
+                    question_count=len(questions),
+                    shift_num=shift_num,
+                    time_str_ist=time_str_ist,
+                    brand_name=b.name,
+                    channel_handle=b.get_effective_channel_handle(),
+                    channel_ids=target_channels
+                )
+                logger.info(f"📢 [{b.name}] Broadcast Delivery Report: {results}")
+            except Exception as e:
+                logger.error(f"❌ Telegram broadcast error for [{b.name}]: {e}")
+        else:
+            logger.info(f"⏭️ Telegram broadcast skipped for [{b.name}] (--no-telegram flag).")
 
     logger.info("=" * 60)
-    logger.info(f"🎉 AryaCA Daily Pipeline Finished Successfully (Shift {shift_num})!")
+    logger.info("🎉 Current Affairs Daily Pipeline Finished Successfully!")
     logger.info("=" * 60)
     return 0
 
 def main():
-    parser = argparse.ArgumentParser(description="AryaCA Daily Current Affairs Engine - Automated Pipeline")
+    parser = argparse.ArgumentParser(description="Daily Current Affairs & AryaCA Multi-Brand Automated Pipeline")
     today_str = datetime.now().strftime("%Y-%m-%d")
     parser.add_argument("--date", default=today_str, help="Edition date in YYYY-MM-DD format")
+    parser.add_argument("--brand", default="affairs_index", help="Target brand: affairs_index, aryaca, or all (default: affairs_index)")
     parser.add_argument("--count", type=int, default=50, help="Number of questions (default: 50, 5 full pages. Supports 20 to 50)")
-    parser.add_argument("--shift", type=int, default=None, help="Shift number (default: auto-detected 1, 2, 3...)")
+    parser.add_argument("--shift", type=int, default=None, help="Shift number override (default: auto-detected 1, 2, 3...)")
     parser.add_argument("--no-telegram", action="store_true", help="Skip sending to Telegram channels")
     parser.add_argument("--dry-run", action="store_true", help="Test run without generating full assets")
 
@@ -167,6 +209,7 @@ def main():
     return run_pipeline(
         date_str=args.date,
         count=args.count,
+        brand=args.brand,
         shift=args.shift,
         skip_telegram=args.no_telegram,
         dry_run=args.dry_run

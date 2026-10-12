@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import List, Dict, Any, Tuple, Optional
 from jinja2 import Environment, FileSystemLoader
 import weasyprint
+from brand_manager import BrandManager, BrandConfig
 
 logger = logging.getLogger("pdf_generator")
 logging.basicConfig(level=logging.INFO)
@@ -38,16 +39,36 @@ class PDFGenerator:
     def generate_edition(self, 
                          date_str: str, 
                          questions: List[Dict[str, Any]], 
-                         brand_name: str = "AryaCA", 
-                         channel_handle: str = "@AryaCAtg",
+                         brand_id: Optional[str] = None,
+                         brand_name: Optional[str] = None, 
+                         channel_handle: Optional[str] = None,
                          channel_url: Optional[str] = None,
                          shift_num: Optional[int] = None,
-                         time_str_ist: Optional[str] = None) -> Tuple[str, str]:
+                         time_str_ist: Optional[str] = None,
+                         file_prefix: Optional[str] = None) -> Tuple[str, str]:
+        # Resolve brand configuration
+        brand_cfg = None
+        if brand_id:
+            brand_cfg = BrandManager.get_brand(brand_id)
+        elif brand_name and brand_name.lower() in ("affairs index", "affairsindex"):
+            brand_cfg = BrandManager.get_brand("affairs_index")
+        elif brand_name and brand_name.lower() in ("aryaca", "arya"):
+            brand_cfg = BrandManager.get_brand("aryaca")
+        
+        if not brand_cfg and not brand_name:
+            brand_cfg = BrandManager.get_brand("aryaca")
+
+        eff_brand_name = brand_name or (brand_cfg.name if brand_cfg else "AryaCA")
+        eff_channel_handle = channel_handle or (brand_cfg.get_effective_channel_handle() if brand_cfg else "@AryaCAtg")
+        eff_channel_url = channel_url or (brand_cfg.get_effective_channel_url() if brand_cfg else f"https://t.me/{eff_channel_handle.lstrip('@')}")
+        eff_file_prefix = file_prefix or (brand_cfg.file_prefix if brand_cfg else eff_brand_name.replace(" ", ""))
+        eff_logo_data_uri = brand_cfg.get_logo_data_uri() if brand_cfg else None
+        eff_title_html = brand_cfg.brand_title_html if brand_cfg else None
+
         shift_label = f" (Shift {shift_num})" if shift_num else ""
-        logger.info(f"📄 Rendering AryaCA edition for {date_str}{shift_label} with {len(questions)} questions...")
+        logger.info(f"📄 Rendering {eff_brand_name} edition for {date_str}{shift_label} with {len(questions)} questions...")
         template = self.jinja_env.get_template("daily_magazine.html")
         date_hi = self.format_date_hindi(date_str)
-        effective_channel_url = channel_url or os.getenv("CHANNEL_URL", f"https://t.me/{channel_handle.lstrip('@')}")
 
         # Multi-page pagination: 10 questions per page
         PAGE_SIZE = 10
@@ -66,9 +87,11 @@ class PDFGenerator:
             })
 
         rendered_html = template.render(
-            brand_name=brand_name,
-            channel_handle=channel_handle,
-            channel_url=effective_channel_url,
+            brand_name=eff_brand_name,
+            channel_handle=eff_channel_handle,
+            channel_url=eff_channel_url,
+            brand_logo_data_uri=eff_logo_data_uri,
+            brand_title_html=eff_title_html,
             edition_date_hi=date_hi,
             pages=pages,
             total_pages=total_pages,
@@ -78,9 +101,9 @@ class PDFGenerator:
         )
 
         shift_suffix = f"_Shift-{shift_num}" if shift_num else ""
-        pdf_filename = f"AryaCA_Daily_{date_str}{shift_suffix}.pdf"
+        pdf_filename = f"{eff_file_prefix}_Daily_{date_str}{shift_suffix}.pdf"
         pdf_path = os.path.join(self.output_dir, pdf_filename)
-        png_path = os.path.join(self.output_dir, f"AryaCA_Daily_{date_str}{shift_suffix}_preview.png")
+        png_path = os.path.join(self.output_dir, f"{eff_file_prefix}_Daily_{date_str}{shift_suffix}_preview.png")
 
         # Compile PDF using WeasyPrint
         logger.info("🎨 Compiling HTML to PDF using WeasyPrint...")

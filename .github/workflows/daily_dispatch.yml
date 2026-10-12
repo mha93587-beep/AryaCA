@@ -1,11 +1,21 @@
-name: AryaCA Daily Current Affairs Automated Dispatch (6:45 AM IST)
+name: Daily Current Affairs Automated Dispatch
 
-# 01:15 UTC = 06:45 AM IST
+run-name: "Current Affairs [${{ inputs.brand || 'affairs_index' }}] Shift ${{ inputs.shift || 'Auto' }} (${{ inputs.date || 'Today' }})"
+
 on:
   schedule:
     - cron: '15 1 * * *'
   workflow_dispatch:
     inputs:
+      brand:
+        description: 'Select Brand (affairs_index, aryaca, or all)'
+        required: true
+        type: choice
+        options:
+          - 'affairs_index'
+          - 'aryaca'
+          - 'all'
+        default: 'affairs_index'
       question_count:
         description: 'Number of MCQs to curate (default: 50)'
         required: false
@@ -19,13 +29,13 @@ on:
         required: false
         default: ''
       dry_run:
-        description: 'Test run (Dry Run - no Telegram spam)'
+        description: 'Test run (Dry Run - no Telegram broadcast)'
         type: boolean
         required: false
         default: false
 
 concurrency:
-  group: aryaca-daily-pipeline
+  group: ca-daily-pipeline-${{ inputs.brand || 'default' }}
   cancel-in-progress: false
 
 jobs:
@@ -42,10 +52,9 @@ jobs:
       APIFY_API: ${{ secrets.APIFY_API }}
       TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
       TG_CHANNEL_CHAT_IDS: ${{ secrets.TG_CHANNEL_CHAT_IDS }}
+      ARYA_CHANNEL_CHAT_IDS: ${{ secrets.ARYA_CHANNEL_CHAT_IDS }}
+      AFFAIRS_INDEX_CHANNEL_CHAT_IDS: ${{ secrets.AFFAIRS_INDEX_CHANNEL_CHAT_IDS }}
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      BRAND_NAME: 'AryaCA'
-      CHANNEL_HANDLE: '@AryaCAtg'
-      CHANNEL_URL: 'https://t.me/AryaCAtg'
 
     steps:
       - name: 📥 Checkout Repository
@@ -78,8 +87,9 @@ jobs:
 
       - name: 🚀 Run Autonomous Daily Pipeline
         run: |
+          BRAND="${{ inputs.brand || 'affairs_index' }}"
           COUNT="${{ inputs.question_count || '50' }}"
-          EXTRA_ARGS=""
+          EXTRA_ARGS="--brand $BRAND"
           if [ -n "${{ inputs.shift }}" ]; then
             EXTRA_ARGS="$EXTRA_ARGS --shift ${{ inputs.shift }}"
           fi
@@ -89,14 +99,14 @@ jobs:
           if [ "${{ inputs.dry_run }}" = "true" ]; then
             EXTRA_ARGS="$EXTRA_ARGS --dry-run"
           fi
-          echo "Running AryaCA automated scheduler at $(date)..."
+          echo "Running Current Affairs automated scheduler for brand [$BRAND] at $(date)..."
           python3 scheduler.py --count "$COUNT" $EXTRA_ARGS
 
       - name: 💾 Archive Generated PDF & Preview Artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: AryaCA-Daily-Output-${{ github.run_id }}
+          name: Daily-Current-Affairs-Output-${{ github.run_id }}
           path: |
             outputs/*.pdf
             outputs/*.png

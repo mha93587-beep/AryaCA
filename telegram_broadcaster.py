@@ -36,15 +36,23 @@ class TelegramBroadcaster:
                           question_count: int = 50,
                           top_topics: Optional[List[str]] = None,
                           shift_num: Optional[int] = None,
-                          time_str_ist: Optional[str] = None) -> Dict[str, bool]:
+                          time_str_ist: Optional[str] = None,
+                          brand_name: str = "AryaCA",
+                          channel_handle: str = "@AryaCAtg",
+                          channel_ids: Optional[List[str]] = None) -> Dict[str, bool]:
         if not self.bot_token:
             raise ValueError("Cannot broadcast: TG_BOT_TOKEN is missing.")
-        if not self.channel_ids:
-            raise ValueError("Cannot broadcast: TG_CHANNEL_CHAT_IDS is empty.")
+        
+        target_channels = channel_ids or self.channel_ids
+        if not target_channels:
+            raise ValueError(f"Cannot broadcast for {brand_name}: target channel list is empty.")
+
+        brand_display = brand_name or "AryaCA"
+        handle_display = channel_handle or "@AryaCAtg"
 
         results = {}
         caption_lines = [
-            f"🌟 <b>AryaCA | दैनिक करंट अफेयर्स व MCQs</b>",
+            f"🌟 <b>{brand_display} | दैनिक करंट अफेयर्स व MCQs</b>",
             f"📅 <b>तारीख:</b> {date_str}",
         ]
         if shift_num:
@@ -56,12 +64,12 @@ class TelegramBroadcaster:
             "🎯 <b>लक्षित परीक्षाएं:</b> RRB NTPC | Group D | SSC CGL | BPSC | BSSC",
             "",
             "👇 <b>संपूर्ण HD मैगजीन PDF नीचे संलग्न है</b> 👇",
-            "🔗 <b>चैनल जॉइन करें:</b> @AryaCAtg"
+            f"🔗 <b>चैनल जॉइन करें:</b> {handle_display}"
         ])
         caption_text = "\n".join(caption_lines)
 
-        for channel in self.channel_ids:
-            logger.info(f"📤 Broadcasting to channel: {channel}...")
+        for channel in target_channels:
+            logger.info(f"📤 Broadcasting for {brand_display} to channel: {channel}...")
             channel_success = False
             try:
                 # 1. Send Preview Photo (if exists)
@@ -87,7 +95,7 @@ class TelegramBroadcaster:
                     doc_url = f"https://api.telegram.org/bot{self.bot_token}/sendDocument"
                     shift_tag = f" • शिफ्ट {shift_num}" if shift_num else ""
                     time_tag = f" • {time_str_ist}" if time_str_ist else ""
-                    doc_caption = f"📄 <b>AryaCA Daily Magazine</b> ({date_str}{shift_tag}{time_tag})\n@AryaCAtg"
+                    doc_caption = f"📄 <b>{brand_display} Daily Magazine</b> ({date_str}{shift_tag}{time_tag})\n{handle_display}"
                     with open(pdf_path, "rb") as f:
                         resp = requests.post(
                             doc_url,

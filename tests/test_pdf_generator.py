@@ -133,3 +133,47 @@ def test_shift_pdf_generation():
     assert "Shift-2" in pdf_path
     assert os.path.exists(png_path)
     assert "Shift-2" in png_path
+
+def test_multibrand_pdf_generation():
+    from pdf_generator import PDFGenerator
+    gen = PDFGenerator()
+    qs = [
+        {
+            "num": i + 1,
+            "question_hi": f"परीक्षण प्रश्न {i+1}?",
+            "question_en": f"Test Question {i+1}?",
+            "options": [
+                {"key": "1", "val": "A"}, {"key": "2", "val": "B"},
+                {"key": "3", "val": "C"}, {"key": "4", "val": "D"},
+                {"key": "5", "val": "अनुत्तरित प्रश्न / Prefer not to answer"}
+            ],
+            "correct_ans": "1",
+            "image_data_uri": None,
+            "exam_fact_hi": "तथ्य", "exam_fact_en": "Fact"
+        }
+        for i in range(10)
+    ]
+    # 1. Affairs Index
+    pdf_ai, png_ai = gen.generate_edition(
+        date_str="2026-10-12",
+        questions=qs,
+        brand_id="affairs_index",
+        shift_num=1,
+        time_str_ist="06:00 AM IST"
+    )
+    assert os.path.exists(pdf_ai)
+    assert "AffairsIndex" in pdf_ai
+    assert os.path.exists(png_ai)
+
+    # 2. AryaCA
+    pdf_ac, png_ac = gen.generate_edition(
+        date_str="2026-10-12",
+        questions=qs,
+        brand_id="aryaca",
+        shift_num=1,
+        time_str_ist="06:00 AM IST"
+    )
+    assert os.path.exists(pdf_ac)
+    assert "AryaCA" in pdf_ac
+    assert os.path.exists(png_ac)
+
