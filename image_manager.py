@@ -21,20 +21,32 @@ class ApifyRotationManager:
     """
     def __init__(self, keys: Optional[List[str]] = None):
         self._lock = threading.Lock()
-        if keys:
+        if keys is not None:
             self.keys = [k.strip() for k in keys if k and k.strip()]
         else:
             raw = os.getenv("APIFY_API") or os.getenv("APIFY_API_KEYS") or os.getenv("APIFY_API_KEY") or ""
             self.keys = [k.strip() for k in raw.replace("\n", ",").split(",") if k.strip()]
         self._index = 0
-        if self.keys:
-            logger.info(f"🔑 Initialized ApifyRotationManager with {len(self.keys)} API key(s).")
+        if not self.is_enabled:
+            logger.info("ℹ️ Apify image source is DISABLED (APIFY_IMAGE_SOURCE=disable). Using fast free sources: Bing, Yandex, Wikipedia, Wikimedia.")
+        elif self.keys:
+            logger.info(f"🔑 Initialized ApifyRotationManager with {len(self.keys)} API key(s) (APIFY_IMAGE_SOURCE=enable).")
         else:
             logger.info("ℹ️ No Apify API keys configured in environment.")
 
     @property
+    def is_enabled(self) -> bool:
+        """
+        Check if Apify actor is enabled via environment variable APIFY_IMAGE_SOURCE.
+        Values: 'enable', 'true', '1', 'on' -> Enabled.
+        Default or 'disable', 'false', '0', 'off' -> Disabled.
+        """
+        val = os.getenv("APIFY_IMAGE_SOURCE", "disable").strip().lower()
+        return val in ("enable", "enabled", "true", "1", "yes", "on")
+
+    @property
     def has_keys(self) -> bool:
-        return len(self.keys) > 0
+        return self.is_enabled and len(self.keys) > 0
 
     def get_current_key(self) -> Optional[str]:
         with self._lock:
@@ -318,7 +330,7 @@ class ImageManager:
             if wiki_thumb:
                 urls.append(wiki_thumb)
 
-        # Source 2: Google Images via Apify (Premier Tier - Highest Accuracy & Photographic Quality)
+        # Source 2: Google Images via Apify (Only if explicitly enabled via APIFY_IMAGE_SOURCE=enable)
         if hasattr(self, "apify") and self.apify.has_keys:
             try:
                 apify_urls = self.apify.search_google_images(cleaned_query, self.session)
@@ -328,7 +340,39 @@ class ImageManager:
             except Exception as e:
                 logger.warning(f"Apify Google Images search error: {e}")
 
-        # Source 3: Wikimedia Commons File API (Open access HD real photos)
+        # Source 3: High-Yield Bing Image Search (Fast, direct, real photographic news & event images)
+        try:
+            encoded = requests.utils.quote(cleaned_query)
+            bing_url = f"https://www.bing.com/images/search?q={encoded}&first=1&scenario=ImageBasicHover"
+            r = self.session.get(bing_url, timeout=5)
+            if r.status_code == 200:
+                matches = re.findall(r'murl&quot;:&quot;(http[^&]+)&quot;', r.text)
+                for u in matches[:12]:
+                    u_low = u.lower()
+                    if any(spam in u_low for spam in ["vecteezy", "oyorooms", "upsccolorfullnotes", "mapasmilhaud", ".svg", ".gif"]):
+                        continue
+                    if u.startswith("http") and u not in urls:
+                        urls.append(u)
+        except Exception as e:
+            logger.warning(f"Bing image search error: {e}")
+
+        # Source 4: High-Yield Yandex Images Search (Vast global and Indian news image index)
+        try:
+            yandex_url = f"https://yandex.com/images/search?text={requests.utils.quote(cleaned_query)}"
+            yr = self.session.get(yandex_url, timeout=5)
+            if yr.status_code == 200:
+                y_matches = re.findall(r'img_url=([^&]+)&', yr.text)
+                for ym in y_matches[:12]:
+                    decoded_u = requests.utils.unquote(ym)
+                    decoded_low = decoded_u.lower()
+                    if any(spam in decoded_low for spam in ["vecteezy", "oyorooms", "upsccolorfullnotes", "mapasmilhaud", ".svg", ".gif"]):
+                        continue
+                    if decoded_u.startswith("http") and decoded_u not in urls:
+                        urls.append(decoded_u)
+        except Exception as e:
+            logger.debug(f"Yandex image search error: {e}")
+
+        # Source 5: Wikimedia Commons File API (Open access HD real photos)
         try:
             commons_url = "https://commons.wikimedia.org/w/api.php"
             params = {
@@ -336,7 +380,7 @@ class ImageManager:
                 "generator": "search",
                 "gsrsearch": cleaned_query,
                 "gsrnamespace": 6,
-                "gsrlimit": 4,
+                "gsrlimit": 5,
                 "prop": "imageinfo",
                 "iiprop": "url",
                 "iiurlwidth": 800,
@@ -353,38 +397,6 @@ class ImageManager:
                             urls.append(thumb)
         except Exception as e:
             logger.debug(f"Wikimedia Commons search error: {e}")
-
-        # Source 4: High-Yield Bing Image Search (Real photographic news & event images)
-        try:
-            encoded = requests.utils.quote(cleaned_query)
-            bing_url = f"https://www.bing.com/images/search?q={encoded}&first=1&scenario=ImageBasicHover"
-            r = self.session.get(bing_url, timeout=5)
-            if r.status_code == 200:
-                matches = re.findall(r'murl&quot;:&quot;(http[^&]+)&quot;', r.text)
-                for u in matches:
-                    u_low = u.lower()
-                    if any(spam in u_low for spam in ["vecteezy", "oyorooms", "upsccolorfullnotes", "mapasmilhaud", ".svg", ".gif"]):
-                        continue
-                    if u.startswith("http") and u not in urls:
-                        urls.append(u)
-        except Exception as e:
-            logger.warning(f"Bing image search error: {e}")
-
-        # Source 5: High-Yield Yandex Images Search (Vast global and national news image index)
-        try:
-            yandex_url = f"https://yandex.com/images/search?text={requests.utils.quote(cleaned_query)}"
-            yr = self.session.get(yandex_url, timeout=5)
-            if yr.status_code == 200:
-                y_matches = re.findall(r'img_url=([^&]+)&', yr.text)
-                for ym in y_matches:
-                    decoded_u = requests.utils.unquote(ym)
-                    decoded_low = decoded_u.lower()
-                    if any(spam in decoded_low for spam in ["vecteezy", "oyorooms", "upsccolorfullnotes", "mapasmilhaud", ".svg", ".gif"]):
-                        continue
-                    if decoded_u.startswith("http") and decoded_u not in urls:
-                        urls.append(decoded_u)
-        except Exception as e:
-            logger.debug(f"Yandex image search error: {e}")
 
         return urls
 

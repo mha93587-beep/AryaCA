@@ -33,6 +33,14 @@ on:
         type: boolean
         required: false
         default: false
+      apify_image_source:
+        description: 'Apify Image Source (disable: use fast free sources Bing/Yandex/Wiki, enable: use Apify Actor)'
+        type: choice
+        options:
+          - 'disable'
+          - 'enable'
+        required: false
+        default: 'disable'
 
 concurrency:
   group: ca-daily-pipeline-${{ inputs.brand || 'default' }}
@@ -48,6 +56,7 @@ jobs:
       TZ: 'Asia/Kolkata'
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
+      APIFY_IMAGE_SOURCE: ${{ inputs.apify_image_source || vars.APIFY_IMAGE_SOURCE || secrets.APIFY_IMAGE_SOURCE || 'disable' }}
       APIFY_API_KEYS: ${{ secrets.APIFY_API_KEYS }}
       APIFY_API: ${{ secrets.APIFY_API }}
       TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
