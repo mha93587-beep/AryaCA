@@ -46,11 +46,13 @@ class CreatorCardGenerator:
         questions: List[Dict[str, Any]],
         brand_id_or_config: Any = "affairs_index",
         shift: int = 1,
-        output_dir: str = "outputs"
+        output_dir: str = "outputs",
+        lang_mode: str = "bilingual"
     ) -> Tuple[str, str]:
         """
-        Generates 9:16 Full HD Question Cards and Answer Key,
+        Generates 16:9 Full HD Question Cards and Answer Key,
         packs them into a .zip archive, and returns (zip_path, preview_png_path).
+        lang_mode can be 'bilingual', 'hindi', or 'english'.
         """
         os.makedirs(output_dir, exist_ok=True)
 
@@ -74,10 +76,30 @@ class CreatorCardGenerator:
             raw_options = q.get("options", [])
             options = []
             for j, opt in enumerate(raw_options, start=1):
-                if isinstance(opt, dict):
-                    options.append(opt)
-                else:
-                    options.append({"key": str(j), "val": str(opt)})
+                val = str(opt.get("val", "")) if isinstance(opt, dict) else str(opt)
+                key = str(opt.get("key", j)) if isinstance(opt, dict) else str(j)
+                val_hi = opt.get("val_hi") if isinstance(opt, dict) else None
+                val_en = opt.get("val_en") if isinstance(opt, dict) else None
+
+                if not val_hi and not val_en:
+                    if " / " in val:
+                        parts = val.split(" / ", 1)
+                        val_hi = parts[0].strip()
+                        val_en = parts[1].strip()
+                    elif "/" in val:
+                        parts = val.split("/", 1)
+                        val_hi = parts[0].strip()
+                        val_en = parts[1].strip()
+                    else:
+                        val_hi = val
+                        val_en = val
+
+                options.append({
+                    "key": key,
+                    "val": val,
+                    "val_hi": val_hi,
+                    "val_en": val_en
+                })
 
             img_uri = q.get("image_data_uri")
             if not img_uri and q.get("local_image_path"):
@@ -103,6 +125,9 @@ class CreatorCardGenerator:
                 "exam_fact_en": q.get("exam_fact_en", q.get("fact_en", ""))
             })
 
+        # Answer key chunks (max 25 questions per slide)
+        ak_chunks = [formatted_questions[idx:idx+25] for idx in range(0, len(formatted_questions), 25)] if formatted_questions else []
+
         # Render HTML
         template = self.jinja_env.get_template("creator_card.html")
         rendered_html = template.render(
@@ -117,18 +142,20 @@ class CreatorCardGenerator:
             edition_date_hi=edition_date_hi,
             edition_date_en=edition_date_en,
             shift=shift,
-            questions=formatted_questions
+            questions=formatted_questions,
+            ak_chunks=ak_chunks,
+            lang_mode=lang_mode
         )
 
-        temp_pdf_path = os.path.join(output_dir, f"temp_creator_{brand.brand_id}_{date_str}_shift{shift}.pdf")
+        temp_pdf_path = os.path.join(output_dir, f"temp_creator_{brand.brand_id}_{lang_mode}_{date_str}_shift{shift}.pdf")
         doc = weasyprint.HTML(string=rendered_html, base_url=self.template_dir)
         doc.write_pdf(target=temp_pdf_path)
-        logger.info(f"✅ Temporary Creator PDF compiled: {temp_pdf_path}")
+        logger.info(f"✅ Temporary Creator PDF ({lang_mode}) compiled: {temp_pdf_path}")
 
-        # Render PDF pages to PNG (9:16 Full HD @ 254 DPI)
-        temp_img_prefix = os.path.join(output_dir, f"temp_page_{brand.brand_id}_{shift}")
+        # Render PDF pages to PNG (16:9 Full HD @ 254 DPI)
+        temp_img_prefix = os.path.join(output_dir, f"temp_page_{brand.brand_id}_{lang_mode}_{shift}")
         cmd = ["pdftoppm", "-png", "-r", "254", temp_pdf_path, temp_img_prefix]
-        res = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        res = subprocess.run(cmd, capture_output=True, text=True, timeout=90)
         if res.returncode != 0:
             logger.error(f"pdftoppm failed with code {res.returncode}: {res.stderr}")
             raise RuntimeError(f"pdftoppm failed: {res.stderr}")
@@ -139,12 +166,20 @@ class CreatorCardGenerator:
             raise FileNotFoundError(f"No images generated for prefix {temp_img_prefix}")
 
         total_pages = len(raw_images)
-        logger.info(f"✅ Generated {total_pages} Creator card slides (Questions: {len(formatted_questions)}, Answer Key: 1)")
+        logger.info(f"✅ Generated {total_pages} Creator card slides [{lang_mode}] (Questions: {len(formatted_questions)}, Answer Keys: {len(ak_chunks)})")
 
         # Prepare ZIP archive
-        zip_filename = f"{brand.file_prefix}_Creator_{date_str}_Shift-{shift}.zip"
+        mode_suffix = ""
+        if lang_mode == "hindi":
+            mode_suffix = "_Hindi"
+        elif lang_mode == "english":
+            mode_suffix = "_English"
+        elif lang_mode == "bilingual":
+            mode_suffix = "_Bilingual"
+
+        zip_filename = f"{brand.file_prefix}_Creator{mode_suffix}_{date_str}_Shift-{shift}.zip"
         zip_path = os.path.join(output_dir, zip_filename)
-        preview_png_path = os.path.join(output_dir, f"{brand.file_prefix}_Creator_{date_str}_Shift-{shift}_preview.png")
+        preview_png_path = os.path.join(output_dir, f"{brand.file_prefix}_Creator{mode_suffix}_{date_str}_Shift-{shift}_preview.png")
 
         # Copy first slide as preview
         if os.path.exists(raw_images[0]):
@@ -156,10 +191,14 @@ class CreatorCardGenerator:
                 if idx <= len(formatted_questions):
                     arcname = f"Question_{idx:02d}.png"
                 else:
-                    arcname = f"Answer_Key_{brand.file_prefix}_{date_str}_Shift-{shift}.png"
+                    ak_idx = idx - len(formatted_questions)
+                    if len(ak_chunks) > 1:
+                        arcname = f"Answer_Key_Part_{ak_idx}_{brand.file_prefix}_{date_str}_Shift-{shift}.png"
+                    else:
+                        arcname = f"Answer_Key_{brand.file_prefix}_{date_str}_Shift-{shift}.png"
                 zf.write(img_file, arcname=arcname)
 
-        logger.info(f"🎉 Creator Pack ZIP created: {zip_path} ({os.path.getsize(zip_path)} bytes)")
+        logger.info(f"🎉 Creator Pack ZIP [{lang_mode}] created: {zip_path} ({os.path.getsize(zip_path)} bytes)")
 
         # Cleanup temp files
         if os.path.exists(temp_pdf_path):
@@ -170,3 +209,34 @@ class CreatorCardGenerator:
             except: pass
 
         return zip_path, preview_png_path
+
+    def generate_all_creator_packs(
+        self,
+        date_str: str,
+        questions: List[Dict[str, Any]],
+        brand_id_or_config: Any = "affairs_index",
+        shift: int = 1,
+        output_dir: str = "outputs"
+    ) -> Dict[str, Tuple[str, str]]:
+        """
+        Generates all 3 Creator Packs:
+        1. Bilingual (Hindi + English)
+        2. Hindi Only (extra-large typography)
+        3. English Only (extra-large typography)
+
+        Returns:
+            Dict mapping mode ('bilingual', 'hindi', 'english') to (zip_path, preview_png_path).
+        """
+        results = {}
+        for mode in ["bilingual", "hindi", "english"]:
+            logger.info(f"🎨 Generating Creator Pack for mode: {mode.upper()}...")
+            z_path, p_path = self.generate_creator_pack(
+                date_str=date_str,
+                questions=questions,
+                brand_id_or_config=brand_id_or_config,
+                shift=shift,
+                output_dir=output_dir,
+                lang_mode=mode
+            )
+            results[mode] = (z_path, p_path)
+        return results

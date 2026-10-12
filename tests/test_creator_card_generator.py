@@ -82,3 +82,85 @@ def test_creator_pack_16_9_generation(tmp_path):
         assert "Question_01.png" in names
         assert "Question_02.png" in names
         assert any("Answer_Key" in n for n in names)
+
+def test_generate_all_creator_packs(tmp_path):
+    output_dir = str(tmp_path)
+    questions = [
+        {
+            "question_hi": f"परीक्षण प्रश्न {i}",
+            "question_en": f"Test Question {i}",
+            "options": [
+                {"key": "1", "val": f"विकल्प 1 / Option 1"},
+                {"key": "2", "val": f"विकल्प 2 / Option 2"},
+                {"key": "3", "val": f"विकल्प 3 / Option 3"},
+                {"key": "4", "val": f"विकल्प 4 / Option 4"},
+                {"key": "5", "val": "अनुत्तरित प्रश्न / Prefer not to answer"}
+            ],
+            "answer": "1",
+            "exam_fact_hi": f"तथ्य {i}",
+            "exam_fact_en": f"Fact {i}"
+        }
+        for i in range(1, 3)
+    ]
+
+    gen = CreatorCardGenerator()
+    brand = BrandManager.get_brand("affairs_index")
+    packs = gen.generate_all_creator_packs(
+        date_str="2026-10-12",
+        questions=questions,
+        brand_id_or_config=brand,
+        shift=1,
+        output_dir=output_dir
+    )
+
+    assert "bilingual" in packs
+    assert "hindi" in packs
+    assert "english" in packs
+
+    for mode in ["bilingual", "hindi", "english"]:
+        zip_p, prev_p = packs[mode]
+        assert os.path.exists(zip_p)
+        assert os.path.exists(prev_p)
+        assert os.path.getsize(zip_p) > 0
+        assert os.path.getsize(prev_p) > 0
+
+def test_answer_key_pagination(tmp_path):
+    output_dir = str(tmp_path)
+    # 26 questions to trigger 2 answer key pages (> 25 per page)
+    questions = [
+        {
+            "num": i,
+            "question_hi": f"परीक्षण प्रश्न {i}",
+            "question_en": f"Test Question {i}",
+            "options": [
+                {"key": "1", "val": f"A / A"},
+                {"key": "2", "val": f"B / B"},
+                {"key": "3", "val": f"C / C"},
+                {"key": "4", "val": f"D / D"},
+                {"key": "5", "val": "अनुत्तरित प्रश्न / Prefer not to answer"}
+            ],
+            "answer": "1",
+            "exam_fact_hi": f"तथ्य {i}",
+            "exam_fact_en": f"Fact {i}"
+        }
+        for i in range(1, 27)
+    ]
+
+    gen = CreatorCardGenerator()
+    brand = BrandManager.get_brand("affairs_index")
+    zip_path, preview_png = gen.generate_creator_pack(
+        date_str="2026-10-12",
+        questions=questions,
+        brand_id_or_config=brand,
+        shift=1,
+        output_dir=output_dir,
+        lang_mode="bilingual"
+    )
+
+    with zipfile.ZipFile(zip_path, "r") as z:
+        names = z.namelist()
+        assert "Question_01.png" in names
+        assert "Question_26.png" in names
+        assert any("Answer_Key_Part_1" in n for n in names)
+        assert any("Answer_Key_Part_2" in n for n in names)
+

@@ -128,10 +128,12 @@ class TelegramBroadcaster:
         date_str: str = "",
         shift_num: Optional[int] = None,
         time_str_ist: Optional[str] = None,
-        count: int = 50
+        count: int = 50,
+        extra_zip_paths: Optional[Dict[str, str]] = None
     ) -> Dict[str, bool]:
         """
-        Broadcasts the 16:9 Creator Edition ZIP pack and sample card to brand creator channels.
+        Broadcasts the 16:9 Creator Edition ZIP packs (Bilingual, Hindi, English)
+        and preview card to brand creator channels.
         """
         brand = BrandManager.get_brand(brand_id or "affairs_index")
         if not brand:
@@ -143,7 +145,7 @@ class TelegramBroadcaster:
             logger.info(f"ℹ️ Brand [{brand.name}] has no creator channels configured. Skipping creator broadcast.")
             return {}
 
-        logger.info(f"🎬 Broadcasting [{brand.name}] Creator Pack to {len(target_channels)} channels: {target_channels}")
+        logger.info(f"🎬 Broadcasting [{brand.name}] Creator Packs to {len(target_channels)} channels: {target_channels}")
         results = {}
 
         shift_tag = f" • शिफ्ट {shift_num}" if shift_num else ""
@@ -154,8 +156,12 @@ class TelegramBroadcaster:
         caption_header = (
             f"🎬 <b>{brand.name} — Creator Edition (Teaching Cards Pack)</b>\n"
             f"📅 <b>{date_str}</b>{shift_tag}{time_tag}\n\n"
-            f"🎯 <b>{count} Full HD (16:9) Cards + Answer Key</b>\n"
-            f"✨ YouTube, Digital Board & Touchscreen Teaching के लिए तैयार\n"
+            f"🎯 <b>{count} Full HD (16:9) Cards + Paginated Answer Keys</b>\n"
+            f"✨ YouTube, Digital Board & Touchscreen Teaching के लिए तैयार\n\n"
+            f"📦 <b>3 Formats Included:</b>\n"
+            f"1️⃣ <b>द्विभाषी (Bilingual)</b> — Hindi & English subtitles\n"
+            f"2️⃣ <b>केवल हिंदी (Hindi Only)</b> — Extra-Large Fonts\n"
+            f"3️⃣ <b>English Only</b> — Extra-Large Fonts\n\n"
             f"👉 Join Creator Hub: <a href=\"{creator_url}\">{creator_handle}</a>"
         )
 
@@ -179,27 +185,46 @@ class TelegramBroadcaster:
 
                 time.sleep(1.0)
 
-                # 2. Send ZIP Archive
-                if os.path.exists(zip_path):
-                    doc_url = f"https://api.telegram.org/bot{self.bot_token}/sendDocument"
-                    zip_caption = (
-                        f"📦 <b>{brand.name} Creator Pack (.zip)</b>\n"
-                        f"Includes {count} Individual Question Images + Complete Answer Key."
-                    )
-                    with open(zip_path, "rb") as f:
-                        resp = requests.post(
-                            doc_url,
-                            data={"chat_id": channel, "caption": zip_caption, "parse_mode": "HTML"},
-                            files={"document": (os.path.basename(zip_path), f, "application/zip")},
-                            timeout=60
+                # 2. Collect all ZIP files to broadcast
+                packs_to_send = [
+                    (zip_path, "Bilingual Pack (द्विभाषी)", f"Includes {count} 16:9 Cards (Hindi + English) + Answer Key.")
+                ]
+                if extra_zip_paths:
+                    if "hindi" in extra_zip_paths and os.path.exists(extra_zip_paths["hindi"]):
+                        packs_to_send.append(
+                            (extra_zip_paths["hindi"], "Hindi Only Pack (केवल हिंदी)", f"Includes {count} 16:9 Cards (Extra-Large Hindi Fonts) + Answer Key.")
                         )
-                        if resp.status_code == 200:
-                            logger.info(f"✅ Creator ZIP pack sent to {channel}")
-                            channel_success = True
-                        else:
-                            logger.warning(f"⚠️ Creator ZIP send failed for {channel}: {resp.status_code} - {resp.text}")
-                else:
-                    logger.error(f"Creator ZIP file not found: {zip_path}")
+                    if "english" in extra_zip_paths and os.path.exists(extra_zip_paths["english"]):
+                        packs_to_send.append(
+                            (extra_zip_paths["english"], "English Only Pack", f"Includes {count} 16:9 Cards (Extra-Large English Fonts) + Answer Key.")
+                        )
+
+                doc_url = f"https://api.telegram.org/bot{self.bot_token}/sendDocument"
+                all_sent = True
+                for zp, title, desc in packs_to_send:
+                    if os.path.exists(zp):
+                        zip_caption = (
+                            f"📦 <b>{brand.name} Creator Pack — {title}</b>\n"
+                            f"{desc}"
+                        )
+                        with open(zp, "rb") as f:
+                            resp = requests.post(
+                                doc_url,
+                                data={"chat_id": channel, "caption": zip_caption, "parse_mode": "HTML"},
+                                files={"document": (os.path.basename(zp), f, "application/zip")},
+                                timeout=60
+                            )
+                            if resp.status_code == 200:
+                                logger.info(f"✅ Creator ZIP [{title}] sent to {channel}")
+                            else:
+                                logger.warning(f"⚠️ Creator ZIP [{title}] send failed for {channel}: {resp.status_code} - {resp.text}")
+                                all_sent = False
+                        time.sleep(1.0)
+                    else:
+                        logger.error(f"Creator ZIP file not found: {zp}")
+                        all_sent = False
+
+                channel_success = all_sent
 
             except Exception as e:
                 logger.error(f"❌ Exception broadcasting creator pack to {channel}: {e}")

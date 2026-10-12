@@ -195,30 +195,38 @@ def run_pipeline(date_str: str,
 
         # Step 6: If brand has creator channels configured, generate & broadcast 16:9 Creator Edition
         if b.has_creator_channel():
-            logger.info(f"6️⃣ Compiling 16:9 Creator Edition Cards Pack for [{b.name}] (Shift {shift_num})...")
+            logger.info(f"6️⃣ Compiling 16:9 Creator Edition Cards Packs (Bilingual, Hindi, English) for [{b.name}] (Shift {shift_num})...")
             try:
                 creator_gen = CreatorCardGenerator()
-                creator_zip_path, creator_preview_png = creator_gen.generate_creator_pack(
+                packs = creator_gen.generate_all_creator_packs(
                     date_str=date_str,
                     questions=questions,
                     brand_id_or_config=b,
                     shift=shift_num,
                     output_dir="outputs"
                 )
-                logger.info(f"✅ [{b.name}] Creator Pack ZIP: {creator_zip_path}")
-                logger.info(f"✅ [{b.name}] Creator Preview PNG: {creator_preview_png}")
+                bilingual_zip, bilingual_preview = packs["bilingual"]
+                hindi_zip, _ = packs["hindi"]
+                english_zip, _ = packs["english"]
+                logger.info(f"✅ [{b.name}] Bilingual Pack ZIP: {bilingual_zip}")
+                logger.info(f"✅ [{b.name}] Hindi-Only Pack ZIP: {hindi_zip}")
+                logger.info(f"✅ [{b.name}] English-Only Pack ZIP: {english_zip}")
 
                 if not skip_telegram and broadcaster:
                     creator_channels = b.get_effective_creator_chat_ids()
-                    logger.info(f"📢 Broadcasting [{b.name}] Creator Pack to: {creator_channels}...")
+                    logger.info(f"📢 Broadcasting [{b.name}] Creator Packs to: {creator_channels}...")
                     c_results = broadcaster.broadcast_creator_pack(
                         brand_id=b.brand_id,
-                        zip_path=creator_zip_path,
-                        preview_png_path=creator_preview_png,
+                        zip_path=bilingual_zip,
+                        preview_png_path=bilingual_preview,
                         date_str=date_str,
                         shift_num=shift_num,
                         time_str_ist=time_str_ist,
-                        count=len(questions)
+                        count=len(questions),
+                        extra_zip_paths={
+                            "hindi": hindi_zip,
+                            "english": english_zip
+                        }
                     )
                     logger.info(f"🎬 [{b.name}] Creator Pack Delivery Report: {c_results}")
                 else:
